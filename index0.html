@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Wits Civils Toolkit</title>
+        <!-- Custom styles for this template -->
+        <link rel="stylesheet" href="styles/global.css">
+        <script type="text/javascript" src="scripts/test.js"></script>
+    </head>
+    <body>
+        <form class="inputs">
+            <table name="joints">
+                <tr>
+                    <td><input type="text" id="joints-00" value=a></td>
+                    <td><input type="text" id="joints-01" value=b></td>
+                </tr>
+            </table>
+            <table name="df">
+                <tr>
+                    <td><input type="number" id="df-00-00" value=25></td>
+                    <td><input type="number" id="df-00-01" value=50></td>
+                </tr>
+            </table>
+            <table name="cof">
+                <tr>
+                    <td><input type="number" id="cof-00-00" value=100></td>
+                    <td><input type="number" id="cof-00-01" value=150></td>
+                </tr>
+            </table>
+            <table name="moments">
+                <tr>
+                    <td><input type="number" id="moments-00-00" value=225></td>
+                    <td><input type="number" id="moments-00-01" value=250></td>
+                </tr>
+            </table>
+            <table name="init">
+                <tr>
+                    <td><input type="number" id="init-00-00" value=325></td>
+                    <td><input type="number" id="init-00-01" value=350></td>
+                </tr>
+            </table>
+            <button type="button" name="button" onclick="main();">Run main()</button>
+        </form>
+        <table>
+            <caption>Distribution factor</caption>
+            <thead>
+                <th>a</th><th>b</th>
+            </thead>
+            <tfoot>
+                <tr>
+                    <td>Foot a</td><td>Foot b</td>
+                </tr>
+            </tfoot>
+            <tbody>
+                <tr>
+                    <td>01</td><td>02</td>
+                </tr>
+            </tbody>
+        </table>
+        <div id="output"></div>
+    </body>
+</html>
