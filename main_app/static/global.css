@@ -3,6 +3,8 @@ body {
     background: #222;
 }
 
-table {
-    border: 1px;
+th, td {
+    color: blue;
+    border: 2px solid;
+    border-color: black;
 }
