@@ -4,7 +4,14 @@ body {
 }
 
 th, td {
-    color: blue;
+    color: inherit;
     border: 2px solid;
+    border-color: black;
+    background: #333;
+}
+
+input {
+    color: inherit;
+    background: black;
     border-color: black;
 }
