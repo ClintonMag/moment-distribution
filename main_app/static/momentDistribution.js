@@ -21,7 +21,7 @@ const cellTypes = {
 }
 
 // The labels for the structure's nodes will be used by an event handler
-var nodeLabelsArray;
+var nodeLabelsArray = [];
 
 function makeTable(rows, cols, footer=true) {
     // i -> loop over rows
@@ -170,147 +170,6 @@ function addTagsToTable(table, tableName, type=null, footer=true) {
     return table;
 }
 
-function makeNodeTable(numberOfNodes) {
-    // Create table that will accept names of joints
-
-    // id will be used to identify table cells
-    let id;
-    // The `joints` table will have 2 columns: Numeric name of joint, and
-    // alphabetic name of joints
-    const totalCols = 2;
-    // totalRows will be a row for each node, plus the header.
-    const totalRows = numberOfNodes + 1;
-    const tableName = tableNames.nodes;
-    let tableSkeleton = makeTable(totalRows, totalCols, false);
-    // Fill in tableSkeleton with tags to display and input data
-    let nodeTable = addTagsToTable(
-        tableSkeleton, tableName, 'input-text', false
-    );
-
-    // Add labels to the table
-
-    // Add name attribute to the <table> tag
-    nodeTable.setAttribute('name', tableName);
-    // Add number-of-nodes attribute to <table> tag for use by other functions
-    nodeTable.setAttribute('number-of-nodes', numberOfNodes);
-    // Attributes for the text input boxes
-    const textBoxSize = 3;
-    const maxChars = 3;
-    // baseAlphabet will be used to create placeholder text in input text boxes
-    const ord_a = 'a'.charCodeAt(0);
-    // Set attributes to the input boxes in the table
-    // Each input box id is of the form tableName-x where x is a number from
-    // 0 to numberOfNodes - 1
-    for (let i = 0; i < numberOfNodes; i++) {
-        id = '#' + tableName + '-' + i + '-' +'0';
-        nodeTable.querySelector(id).setAttribute('size', textBoxSize);
-        nodeTable.querySelector(id).setAttribute('maxlength', maxChars);
-        nodeTable.querySelector(id).setAttribute(
-            'value', String.fromCharCode(ord_a + i)
-        );
-    }
-    // Populate the header and row label with appropriate values
-    // Header
-    id = '#' + tableName + '-header-0';
-    nodeTable.querySelector(id).textContent = 'Joint Number';
-    id = '#' + tableName + '-header-1';
-    nodeTable.querySelector(id).textContent = 'Alphabetic Label';
-    // Row labels
-    for (let i = 0; i < nodeTable.rows.length-1; i++) {
-        let id = '#' + tableName + '-row-' + i;
-        nodeTable.querySelector(id).textContent = i;
-    }
-    return nodeTable;
-}
-
-function makeAppliedMomentsTable(numberOfNodes) {
-    // Create table that will accept applied moments at a node
-
-    // id will be used to identify table cells
-    let id;
-    // The `moments` table will have 2 columns: Alphabetic name of joint, and
-    // moments at joints
-    const totalCols = 2;
-    // totalRows will be a row for each node, plus the header.
-    const totalRows = numberOfNodes + 1;
-    const tableName = tableNames.appliedMoments;
-    let tableSkeleton = makeTable(totalRows, totalCols, false);
-    // Fill in tableSkeleton with tags to display and input data
-    let nodeTable = addTagsToTable(
-        tableSkeleton, tableName, cellTypes.inputNumber, false
-    );
-
-    // Add labels to the table
-
-    // Add name attribute to the <table> tag
-    nodeTable.setAttribute('name', tableName);
-    // Add number-of-nodes attribute to <table> tag for use by other functions
-    nodeTable.setAttribute('number-of-nodes', numberOfNodes);
-
-    // Attributes for the input boxes
-
-    // Set attributes to the input boxes in the table
-    // Each input box id is of the form tableName-x where x is a number from
-    // 0 to numberOfNodes - 1
-    /* Unhide to add default value to input box
-    for (let i = 0; i < numberOfNodes; i++) {
-        id = '#' + tableName + '-' + i + '-' +'0';
-        nodeTable.querySelector(id).setAttribute('value', i);
-    }
-    */
-
-    // Populate the header and row label with appropriate values
-
-    // Header
-    id = '#' + tableName + '-header-0';
-    nodeTable.querySelector(id).textContent = 'Alphabetic Label';
-    id = '#' + tableName + '-header-1';
-    nodeTable.querySelector(id).textContent = 'Moment at node';
-
-    // Row labels
-    for (let i = 0; i < numberOfNodes; i++) {
-        let id = '#' + tableName + '-row-' + i;
-        let cell = nodeTable.querySelector(id);
-        cell.textContent = nodeLabelsArray[i];
-        // Add 'node-label' class to cell so the applyNodeLable event listener
-        // can apply correct label to it.
-        cell.setAttribute('class', 'node-label');
-    }
-
-    return nodeTable;
-}
-
-function readNodeLabels() {
-    // Reads input text boxes for node labels
-
-    // Current extracted label;
-    let label;
-    // Array of node labels
-    let nodeLabelsArray = [];
-
-    // Get the node labels table
-    let nodeTable = document.getElementsByName(tableNames.nodes)[0];
-    let tableName = nodeTable.getAttribute('name');
-    let numberOfNodes = Number(nodeTable.getAttribute('number-of-nodes'));
-    // Extract labels
-    for (let i = 0; i < numberOfNodes; i++) {
-        label = nodeTable.querySelector('#'+tableName+'-'+i+'-0').value;
-        nodeLabelsArray.push(label);
-    }
-    return nodeLabelsArray;
-}
-
-function disableDiagonal(table) {
-    // For tables df, cof & init, input boxes on a diagonal cannot have a value
-    let numberOfNodes = Number(table.getAttribute('number-of-nodes'));
-    let tableName = table.getAttribute('name');
-    for (let i = 0; i < numberOfNodes; i++) {
-        let id = table.querySelector('#' + tableName + '-' + i + '-' + i);
-        id.disabled = true;
-    }
-    return table;
-}
-
 function makeContentTable(numberOfNodes, tableName, type=null,footer=true) {
     // Create a 2D table to contain input or computed data
 
@@ -348,8 +207,8 @@ function makeContentTable(numberOfNodes, tableName, type=null,footer=true) {
     */
 
     // Populate the header and row label with appropriate values.
-    // Also add class 'node-label' to each <span> in the table whose value is a
-    // node label taken from the table named 'nodes'.
+    // Also add class 'node-label-x' to each <span> in the table whose value is
+    // a node label taken from the table named 'nodes'.
 
     // Top-left cell of table will have the table name
     id = '#' + tableName + '-header-0';
@@ -360,7 +219,7 @@ function makeContentTable(numberOfNodes, tableName, type=null,footer=true) {
         id = '#' + tableName + '-header-' + j;
         let cell = dataTable.querySelector(id);
         cell.textContent = nodeLabelsArray[j-1];
-        cell.setAttribute('class', 'node-label');
+        cell.setAttribute('class', 'node-label-' + (j-1));
     }
 
     // Footer labels
@@ -381,13 +240,182 @@ function makeContentTable(numberOfNodes, tableName, type=null,footer=true) {
         let id = '#' + tableName + '-row-' + i;
         let cell = dataTable.querySelector(id);
         cell.textContent = nodeLabelsArray[i];
-        cell.setAttribute('class', 'node-label');
+        cell.setAttribute('class', 'node-label-' + i);
     }
 
     return dataTable;
 }
 
-function generateInputTables() {
+function makeNodeTable(numberOfNodes) {
+    // Create table that will accept names of joints.
+    // During table creation, store the default values in the table's input
+    // boxes in an array. This array will be used by an event listener
+    // (replaceLabel) See the event listener replaceLabel for its function.
+
+    // id will be used to identify table cells
+    let id;
+    // The `joints` table will have 2 columns: Numeric name of joint, and
+    // alphabetic name of joints
+    const totalCols = 2;
+    // totalRows will be a row for each node, plus the header.
+    const totalRows = numberOfNodes + 1;
+    const tableName = tableNames.nodes;
+    let tableSkeleton = makeTable(totalRows, totalCols, false);
+    // Fill in tableSkeleton with tags to display and input data
+    let nodeTable = addTagsToTable(
+        tableSkeleton, tableName, 'input-text', false
+    );
+
+    // Add labels to the table
+
+    // Add name attribute to the <table> tag
+    nodeTable.setAttribute('name', tableName);
+    // Add number-of-nodes attribute to <table> tag for use by other functions
+    nodeTable.setAttribute('number-of-nodes', numberOfNodes);
+
+    // Attributes for the text input boxes
+    const textBoxSize = 3;
+    const maxChars = 3;
+    // baseAlphabet will be used to create placeholder text in input text boxes
+    const ord_a = 'a'.charCodeAt(0);
+
+    // Set attributes to the input boxes in the table.
+    // Each input box id is of the form tableName-x where x is a number from
+    // 0 to numberOfNodes - 1
+    for (let i = 0; i < numberOfNodes; i++) {
+        id = '#' + tableName + '-' + i + '-' +'0';
+        let box = nodeTable.querySelector(id);
+        box.setAttribute('size', textBoxSize);
+        box.setAttribute('maxlength', maxChars);
+        // Set initial value in the input boxes
+        box.setAttribute('value', String.fromCharCode(ord_a + i));
+        // Store the initial value in the global variable nodeLabelsArray
+        nodeLabelsArray[i] = String.fromCharCode(ord_a + i);
+        // Add the 'input' event to input boxes so that their value can be used
+        // by other tables with the 'node-label-x' class name, where x is a
+        // number from 0 to numberOfNodes-1
+        box.addEventListener('input', replaceLabel, false);
+    }
+
+    // Populate the header and row label with appropriate values
+
+    // Header
+    id = '#' + tableName + '-header-0';
+    nodeTable.querySelector(id).textContent = 'Joint Number';
+    id = '#' + tableName + '-header-1';
+    nodeTable.querySelector(id).textContent = 'Alphabetic Label';
+    // Row labels
+    for (let i = 0; i < nodeTable.rows.length-1; i++) {
+        let id = '#' + tableName + '-row-' + i;
+        nodeTable.querySelector(id).textContent = i;
+    }
+
+    return nodeTable;
+}
+
+function makeAppliedMomentsTable(numberOfNodes) {
+    // Create table that will accept applied moments at a node
+
+    // id will be used to identify table cells
+    let id;
+    // The 'moments' table will have 2 columns: Alphabetic name of joint, and
+    // moments at joints
+    const totalCols = 2;
+    // totalRows will be a row for each node, plus the header.
+    const totalRows = numberOfNodes + 1;
+    const tableName = tableNames.appliedMoments;
+    let tableSkeleton = makeTable(totalRows, totalCols, false);
+    // Fill in tableSkeleton with tags to display and input data
+    let nodeTable = addTagsToTable(
+        tableSkeleton, tableName, cellTypes.inputNumber, false
+    );
+
+    // Add labels to the table
+
+    // Add name attribute to the <table> tag
+    nodeTable.setAttribute('name', tableName);
+    // Add number-of-nodes attribute to <table> tag for use by other functions
+    nodeTable.setAttribute('number-of-nodes', numberOfNodes);
+
+    /* Unhide to add default value to input box
+    for (let i = 0; i < numberOfNodes; i++) {
+        id = '#' + tableName + '-' + i + '-' +'0';
+        nodeTable.querySelector(id).setAttribute('value', i);
+    }
+    */
+
+    // Populate the header and row label with appropriate values
+
+    // Header
+    id = '#' + tableName + '-header-0';
+    nodeTable.querySelector(id).textContent = 'Alphabetic Label';
+    id = '#' + tableName + '-header-1';
+    nodeTable.querySelector(id).textContent = 'Moment at node';
+
+    // Row labels
+    for (let i = 0; i < numberOfNodes; i++) {
+        let id = '#' + tableName + '-row-' + i;
+        let cell = nodeTable.querySelector(id);
+        cell.textContent = nodeLabelsArray[i];
+        // Add 'node-label-x' class to cell so the replaceLabel event listener
+        // can apply the correct label to it.
+        cell.setAttribute('class', 'node-label-' + i);
+    }
+
+    return nodeTable;
+}
+
+function disableDiagonal(table) {
+    // For tables df, cof & init, input boxes on a diagonal cannot have a value
+    let numberOfNodes = Number(table.getAttribute('number-of-nodes'));
+    let tableName = table.getAttribute('name');
+    for (let i = 0; i < numberOfNodes; i++) {
+        let id = table.querySelector('#' + tableName + '-' + i + '-' + i);
+        id.disabled = true;
+    }
+}
+
+function replaceLabel(event) {
+        // Respond to 'input' event of the input boxes of the 'nodes' table and
+        // apply the changes to all cells with the class name 'nodes-lable-x'.
+        // Keep the value of the current value in the input box so that it can be
+        // compared to the new value. If the new value is the same as the previous
+        // value, then don't change the DOM.
+
+        // Determine what element triggered event.
+        let inputBox = this;
+
+        // Compare new value in the input box with the previous value in that
+        // box
+
+        // Extract new value of label
+        let newLabel = inputBox.value;
+
+        // re is the regular expression used to find out the index needed to
+        // extract the correct stored value in nodeLabelsArray.
+        let re = /-(\d+)-/;
+        // exec returns and array. The capture group is at index 1.
+        let index = Number(re.exec(inputBox.id)[1]);
+        // Extract old value
+        let oldLabel = nodeLabelsArray[index];
+
+        if (newLabel === oldLabel) {
+            // Don't modify DOM
+            return;
+        }
+
+        // Update nodeLabelsArray with the new value
+        nodeLabelsArray[index] = newLabel;
+
+        // Get all elements with 'node-label-index' as a class name
+        let labelElements = document.querySelectorAll('.node-label-' + index);
+        // Apply new labels to those elements
+        for (let i = 0; i < labelElements.length; i++) {
+            labelElements[i].textContent = newLabel;
+        }
+    }
+
+function generateInputTables(event) {
     // Create all input tables to run the moment distribution method.
 
     // Create the table for the names of each joint
@@ -396,48 +424,31 @@ function generateInputTables() {
     );
 
     let nodeTable = makeNodeTable(numberOfNodes);
-    document.getElementById('input-tables').appendChild(nodeTable);
-
     // Read initial node labels so function calls below can use nodeLabelsArray
-    nodeLabelsArray = readNodeLabels();
-
-    // TODO: add an event listener to elements of nodeTable so that their
-    // values are constantly updated in the web application if they change.
-    // The listener will keep checking the node labels. If they change, they
-    // must be sent to all tags that use them. All such tags will need a way
-    // to be identified.
-
-    /*
-    // Create temp button to check reading of labels table
-    let button = document.createElement('button');
-    button.type = 'button';
-    button.onclick = readNodeLabels;
-    button.innerHTML = 'Read Labels';
-    document.body.appendChild(button);
-    */
+    document.getElementById('input-tables').appendChild(nodeTable);
 
     // Create distribution factor input table
     let dfTable = makeContentTable(
         numberOfNodes, tableNames.df, cellTypes.inputNumber
     )
-    dfTable = disableDiagonal(dfTable);
+    disableDiagonal(dfTable);
     document.getElementById('input-tables').appendChild(dfTable);
 
     // Create carry-over factor input table
     let cofTable = makeContentTable(
         numberOfNodes, tableNames.cof, cellTypes.inputNumber, false
     )
-    cofTable = disableDiagonal(cofTable);
+    disableDiagonal(cofTable);
     document.getElementById('input-tables').appendChild(cofTable);
 
     // Create initial moments input table
     let initialMomentsTable = makeContentTable(
         numberOfNodes, tableNames.initialMoments, cellTypes.inputNumber
     )
-    initialMomentsTable = disableDiagonal(initialMomentsTable);
+    disableDiagonal(initialMomentsTable);
     document.getElementById('input-tables').appendChild(initialMomentsTable);
 
-    // Create initial moments input table
+    // Create applied moments input table
     let appliedMomentsTable = makeAppliedMomentsTable(numberOfNodes);
     document.getElementById('input-tables').appendChild(appliedMomentsTable);
 }
