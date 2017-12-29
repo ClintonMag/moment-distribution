@@ -1,53 +1,94 @@
-/* Don't forget description of what all this is
+/* momentDistribution.js
+
+Author: Clinton Magano
+email: code.clinton.magano@gmail.com
+
+This script calculates the bending moments in a structure using the
+Moment Distribution approximate method. This is mostly for final year
+Civil Engineering students at the University of the Witwatersrand,
+Johannesburg, South Africa.
+
+Given a structure such as the below,
+___________________
+▀a       ▀b       ▀c
+joints a, b, c are fixed. If there are forces between a, b, and c,
+then the compute the initial moments at each joint using the
+appropriate moment table. In this case, the moment table for a fixed-
+ended beam will be used.
+Mab will be the moment at joint a within beam ab, Mba will be the
+moment at b within beam ab, Mbc will be the moment at b within beam
+bc, Mcb will be the moment at c within beam bc.
+
+In the input tables, the initial moments, carry-over facors and
+distribution factors are applicable from the joint in the column of
+the table to the joint in the row of the table.
+
+E.g let a cell in the table me represented by two joints so that
+moment Mab is the moment at a in beam ab. Using the beam above, the
+carry-over factor from b to a will be represented by cell(a, b) in
+carry-over factor table, where a is row in the table and b is the
+column.
+The distribution factor from b to a will be in cell(a, b) in the
+distribution factor table. The distribution factor from b to c
+will be in cell(c, b) in the table.
+
+If there are moments applied at the joints themselves, the value of
+the moments can be specified in the Applied Moments table.
+
+When the Compute Moments button is pressed, the moments distribution
+algorithm will run and output a table showing the moments at each
+joint per iteration of the moment until the desired error or number
+of iterations is reached. The moments specified in the Total M row
+of the output table will be the true moments in the structure for
+the applied forces specified.
+
 */
+
+// Some global variables
+
+// nodeLabelsArray is used to keep all <td> tags with the class name
+// 'node-label-x' updated.
+var nodeLabelsArray = [];
 
 var momentDist = (function () {
 
 'use strict';
 
-// Constants to be used by several functions
-const tableNames = {
-    nodes: 'nodes',
-    df: 'df',
-    cof: 'cof',
-    initialMoments: 'init',
-    appliedMoments: 'moments'
-}
-
-// Constants for types of tags a data-holding cell can have
-const cellTypes = {
-    inputText: 'input-text',
-    inputNumber: 'input-number'
-}
-
-// The labels for the structure's nodes will be used by an event handler
-var nodeLabelsArray = [];
-
-function makeTable(rows, cols, footer=true) {
-    // i -> loop over rows
-    // j -> loop over columns
-    let i, j;
-
-    // Create an empty html table
-    let table = document.createElement('table');
-    let tableHead = document.createElement('thead');
-    let tableFoot;
-    if (footer) {
-        tableFoot = document.createElement('tfoot');
+class Table {
+    constructor(name, rows, cols) {
+        this.name = name;
+        this.rows = rows;
+        this.cols = cols;
+        this.table = this.makeTable(rows, cols);
     }
-    let tableBody = document.createElement('tbody');
 
-    // Construct the table header row
-    let header = document.createElement('tr');
-    for (j = 0; j < cols; j++) {
-        let th = document.createElement('th');
-        header.appendChild(th);
-    }
-    // Append the header row to the head of the table
-    tableHead.appendChild(header);
+    makeTable(rows, cols) {
+        // Create a table with a caption, header, footer and body.
 
-    // Construct the table footer row
-    if (footer) {
+        // i -> loop over rows
+        // j -> loop over columns
+        let i, j;
+
+        // Create an empty html table
+        let table = document.createElement('table');
+        let caption = table.createCaption();
+        let tableHead = table.createTHead();
+        let tableFoot = table.createTFoot();
+        let tableBody = table.createTBody();
+
+        // Set the name attribute to name
+        table.setAttribute('name', this.name);
+
+        // Construct the table header row
+        let header = document.createElement('tr');
+        for (j = 0; j < cols; j++) {
+            let th = document.createElement('th');
+            header.appendChild(th);
+        }
+        // Append the header row to the head of the table
+        tableHead.appendChild(header);
+
+        // Construct the table footer row
         let footerRow = document.createElement('tr');
         for (j = 0; j < cols; j++) {
             let td = document.createElement('td');
@@ -55,324 +96,156 @@ function makeTable(rows, cols, footer=true) {
         }
         // Append the footer row to the foot of the table
         tableFoot.appendChild(footerRow);
-    }
 
-    // Create the rest of the rows
-    let dataRows = rows - 1;
-    if (footer) {
-        dataRows = rows - 2;
-    }
-    for (i = 0; i < dataRows; i++) {
-        let row = document.createElement('tr');
-        // Create table cells
-        for (j = 0; j < cols; j++) {
-            let cell = document.createElement('td');
-            row.appendChild(cell);
+        // Create the rest of the rows. Just clone the footer's row.
+        // rows-2 to account for the header and footer.
+        for (i = 0; i < rows-2; i++) {
+            let row = tableFoot.rows[0].cloneNode(true);
+            tableBody.appendChild(row);
         }
-        // Append row to the table body
-        tableBody.appendChild(row);
+
+        return table;
     }
 
-    // Append head, foot and body to the table
-    table.appendChild(tableHead);
-    if (footer) {
-        table.appendChild(tableFoot);
-    }
-    table.appendChild(tableBody);
+    getInnerCell(x, y) {
+        // Choose the tag that is the firstChild of a specific <td> element.
 
-    return table;
-}
-
-function addTagsToTable(table, tableName, type=null, footer=true) {
-    /* table is a <table> DOM element with <thead>, <tbody>, <th>, <tr> and
-     * <td> elements.
-     * table_name will be used to name the <table> tag.
-     * type is the type of data the table will be used for.
-     *   type='text' means table will have <input> tags of type text
-     *   type='number' means table will have <input> tags of type number
-     *   type='span' means table will have <span> in all appropriate <tr> tags
-     * dims determines if the table has a 2D grid of inputs or just a single
-     * column of inputs.
-     * footer determines if the last row of the table is just text information
-     */
-
-    // Headers, footers and row labels are non-data-holding cells as they only
-    // contain information about the table.
-
-    // The value of the type attribute of an <input> tag
-    let inputTagType;
-    // textNode to be added to appropriate <tr> elements, and the <span> tags
-    // of all non-data-containing cells in the table.
-    let textNode = document.createTextNode('');
-    // span is the <span> tag to be used in headers, footers and row labels.
-    let span = document.createElement('span');
-    span.appendChild(textNode);
-    // Tag to be appended to <tr> tags that contain the table data. May be
-    // changed to another tag later.
-    let dataCell = document.createElement('input');
-
-    // Determine appropriate tag and it's type attribute for cells containing
-    // data.
-    switch (type) {
-        case 'input-text':
-            // <input> tags to be added to appropriate <tr> elements
-            inputTagType = 'text';
-            break;
-        case 'input-number':
-            inputTagType = 'number';
-            break;
-        default:
-            // Change dataCell to a <span> tag that will be used for output
-            dataCell = span;
-    }
-    // Create type attribute of cell if cell contains an input element
-    // True if dataCell is an <input> tag
-    if (typeof inputTagType !== 'undefined') {
-        dataCell.type = inputTagType;
+        return this.table.rows[x].cells[y].firstChild;
     }
 
-    // Append the dataCells to each <th> or <td> in the table
-    for (let i = 0; i < table.rows.length; i++) {
-        let row = table.rows[i];
-        for (let j = 0; j < row.cells.length; j++) {
-            // cell is an element to be appended to a <th> or <td> tag.
-            let cell;
-            // The first row of all tables is the header with text only.
-            // If a footer is added to the table, the last row is text only.
-            // The first column of all rows is a row label, contains text only.
-            if (i == 0 || (j == 0) || (i == table.rows.length-1 && footer)) {
-                cell = span.cloneNode(true);
-                // Header id will be in the form tableName-header-x; x is a
-                // number that starts with 0.
-                // Footer id will be in the form tableName-footer-x
-                // Row label id will be in the form tableName-row-x
-                if (i == 0) {
-                    // header
-                    cell.id = tableName + '-header-' + j;
-                } else if (i == table.rows.length-1 && footer) {
-                    // footer
-                    cell.id = tableName + '-footer-' + j;
-                } else if (j == 0) {
-                    // row label that isn't in the header or footer
-                    cell.id = tableName + '-row-' + (i-1);
-                }
-            } else {
-                // Create clones of dataCell to be appended to the table
-                cell = dataCell.cloneNode(true);
-                // Set id attribute of data-holding cell.
-                // This naming format is for data-holding cells of the table.
-                // Set id attribute to the value tableName-x-x. x is a digit.
-                cell.id = tableName + '-' + (i-1) + '-' + (j-1);
+    SetCaption(caption) {
+        // Set the table's caption.
+        this.table.caption.textContent = caption;
+    }
+
+    setTag(tag, start, size={x: 1, y: 1}) {
+        // Append tag to each td/th specified.
+
+        // tag is an html DOM element.
+        // Start appending from td 'start' where start = {x:val, y: val}.
+        // size is the object {x:val, y:val} where size['x'] is the number
+        // of rows that will have tag appended, and size['y'] is the
+        // number of columns that will have tag appended. These rows and
+        // columns are inclusive of the row in which 'start' belongs.
+        // This means size = {x:1, y:1} represents just one td: the specified
+        // by 'start'.
+
+        for (let i = start.x; i < start.x+size.x; i++) {
+            for (let j = start.y; j < start.y+size.y; j++) {
+                this.table.rows[i].cells[j].appendChild(tag.cloneNode(true));
             }
-            row.cells[j].appendChild(cell);
         }
     }
-    return table;
-}
 
-function makeContentTable(numberOfNodes, tableName, type=null,footer=true) {
-    // Create a 2D table to contain input or computed data
+    setIdClass(
+        className, start, size={x: 1, y: 1}, offset={x: 0, y: 0}, swap=false
+    ) {
+        // Add a class to the specified cells.
 
-    // id will be used to identify table cells
-    let id;
-    // There numberOfNodes + 1 columns, extra column is for row labels.
-    let totalCols = numberOfNodes + 1;
-    // totalRows will be a row for each node, plus the header and footer.
-    let totalRows;
-    if (footer) {
-        totalRows = numberOfNodes + 2;
-    } else {
-        totalRows = numberOfNodes + 1;
-    }
+        // The class will be in the form className-x-y where x and y are
+        // the x,y index of the td containing the tag whose class is being
+        // updated.
+        // offset is the offset in x or y of the class name from the x
+        // y index of the td. E.g. cell (2,2) in the table will have
+        // the name className-2-2  normally, but with an offset of
+        // {x: -1, y: -2}, the new name will have an (x,y) of x=x+offset.x,
+        // y=y+offset.y setting it to className-1-0
+        // swap will swap the positions of x and y in the class name creation.
+        // If set to true, then the x and y values in the supplied offset must
+        // be swapped too.
 
-    let tableSkeleton = makeTable(totalRows, totalCols);
-    // Fill in tableSkeleton with tags to display and input data
-    let dataTable = addTagsToTable(tableSkeleton, tableName, type, footer);
-
-    // Add labels to the table
-
-    // Add name attribute to the <table> tag
-    dataTable.setAttribute('name', tableName);
-    // Add number-of-nodes attribute to <table> tag for use by other functions
-    dataTable.setAttribute('number-of-nodes', numberOfNodes);
-
-    /* Unhide to add placeholder values in the number box
-    // 0 to numberOfNodes - 1
-    for (let i = 0; i < numberOfNodes; i++) {
-        for (let j = 0; j < numberOfNodes; j++) {
-            id = '#' + tableName + '-' + i + '-' + j;
-            dataTable.querySelector(id).setAttribute('value', i);
+        for (let i = start.x; i < start.x+size.x; i++) {
+            for (let j = start.y; j < start.y+size.y; j++) {
+                let xInc = swap ? j : i;
+                let yInc = swap ? i : j;
+                this.getInnerCell(i, j).classList.add(
+                    className + '-' + (xInc+offset.x) + '-' + (yInc+offset.y)
+                );
+            }
         }
     }
-    */
 
-    // Populate the header and row label with appropriate values.
-    // Also add class 'node-label-x' to each <span> in the table whose value is
-    // a node label taken from the table named 'nodes'.
+    setId(idName, start, size={x: 1, y: 1}, offset={x: 0, y: 0}) {
+        // Add an id to the specified cells.
 
-    // Top-left cell of table will have the table name
-    id = '#' + tableName + '-header-0';
-    dataTable.querySelector(id).textContent = tableName;
+        // The id will be in the form idName-x-y where x and y are
+        // the x,y index of the td containing the tag whose id is being
+        // updated.
+        // offset is the offset in x or y of the id name from the x
+        // y index of the td. E.g. cell (2,2) in the table will have
+        // the name idName-2-2  normally, but with an offset of
+        // {x: -1, y: -2}, the new name will have an (x,y) of x=x+offset.x,
+        // y=y+offset.y setting it to idName-1-0
 
-    // Header labels
-    for (let j = 1; j < totalCols; j++) {
-        id = '#' + tableName + '-header-' + j;
-        let cell = dataTable.querySelector(id);
-        cell.textContent = nodeLabelsArray[j-1];
-        cell.setAttribute('class', 'node-label-' + (j-1));
-    }
-
-    // Footer labels
-    if (footer) {
-        // Bottom-left cell of table will have the text 'Sum'
-        id = '#' + tableName + '-footer-0';
-        dataTable.querySelector(id).textContent = 'Sum';
-        /* Unhide to add placeholder text in the footer
-        for (let j = 1; j < totalCols; j++) {
-            id = '#' + tableName + '-footer-' + j;
-            dataTable.querySelector(id).textContent = j + 'f';
+        for (let i = start.x; i < start.x+size.x; i++) {
+            for (let j = start.y; j < start.y+size.y; j++) {
+                this.getInnerCell(i, j).id =
+                    idName + '-' + (i+offset.x) + '-' + (j+offset.y);
+            }
         }
-        */
     }
-
-    // Row labels
-    for (let i = 0; i < numberOfNodes; i++) {
-        let id = '#' + tableName + '-row-' + i;
-        let cell = dataTable.querySelector(id);
-        cell.textContent = nodeLabelsArray[i];
-        cell.setAttribute('class', 'node-label-' + i);
-    }
-
-    return dataTable;
 }
 
 function makeNodeTable(numberOfNodes) {
-    // Create table that will accept names of joints.
-    // During table creation, store the default values in the table's input
-    // boxes in an array. This array will be used by an event listener
-    // (replaceLabel) See the event listener replaceLabel for its function.
+    // Create the table for labelling nodes.
 
-    // id will be used to identify table cells
-    let id;
-    // The `joints` table will have 2 columns: Numeric name of joint, and
-    // alphabetic name of joints
-    const totalCols = 2;
-    // totalRows will be a row for each node, plus the header.
-    const totalRows = numberOfNodes + 1;
-    const tableName = tableNames.nodes;
-    let tableSkeleton = makeTable(totalRows, totalCols, false);
-    // Fill in tableSkeleton with tags to display and input data
-    let nodeTable = addTagsToTable(
-        tableSkeleton, tableName, 'input-text', false
-    );
+    // This table will be used to set the textContent of the <span> of td
+    // tags that have the class 'node-label-x-0' on them.
 
-    // Add labels to the table
+    // Create the nodes table
+    let nodes = new Table('nodes', numberOfNodes+2, 2);
 
-    // Add name attribute to the <table> tag
-    nodeTable.setAttribute('name', tableName);
-    // Add number-of-nodes attribute to <table> tag for use by other functions
-    nodeTable.setAttribute('number-of-nodes', numberOfNodes);
+    // Hide the footer as not needed
+    nodes.table.tFoot.hidden = true;
 
-    // Attributes for the text input boxes
-    const textBoxSize = 3;
-    const maxChars = 3;
-    // baseAlphabet will be used to create placeholder text in input text boxes
+    // Add input tags to table
+    let inputNumber = document.createElement('input');
+    inputNumber.type = 'text';
+    inputNumber.size = 3;
+    inputNumber.setAttribute('maxlength', 3);
+    let start = {x: 1, y: 1};
+    let size = {x: numberOfNodes, y: 1};
+    nodes.setTag(inputNumber, start, size);
+
+    // Add id to each input box for use by event handler replaceLabel
+    start = {x: 1, y: 1};
+    size = {x: numberOfNodes, y: 1};
+    let offset = {x: -1, y: -1};
+    nodes.setId(nodes.name, start, size, offset);
+
+    // Add <span> tags to header
+    let span = document.createElement('span');
+    start = {x: 0, y: 0};
+    size = {x: 1, y: nodes.cols};
+    nodes.setTag(span, start, size);
+
+    // Add <span> tags for row labels
+    start = {x: 1, y: 0};
+    size = {x: numberOfNodes, y: 1};
+    nodes.setTag(span, start, size);
+
+    // Add initial values to header, row labels and input boxes
+    // Header
+    nodes.getInnerCell(0, 0).textContent = "Joint Number";
+    nodes.getInnerCell(0, 1).textContent = "Alphabetic label";
+
+    // Row labels and input boxes.
+    // Row labels: single column of cells in the first column and not in the
+    // header or footer.
     const ord_a = 'a'.charCodeAt(0);
-
-    // Set attributes to the input boxes in the table.
-    // Each input box id is of the form tableName-x where x is a number from
-    // 0 to numberOfNodes - 1
-    for (let i = 0; i < numberOfNodes; i++) {
-        id = '#' + tableName + '-' + i + '-' +'0';
-        let box = nodeTable.querySelector(id);
-        box.setAttribute('size', textBoxSize);
-        box.setAttribute('maxlength', maxChars);
-        // Set initial value in the input boxes
-        box.setAttribute('value', String.fromCharCode(ord_a + i));
+    for (let i = 1; i <= numberOfNodes; i++) {
+        nodes.getInnerCell(i, 0).textContent = i;
+        let box = nodes.getInnerCell(i, 1);
+        box.setAttribute('value', String.fromCharCode(ord_a + i-1));
         // Store the initial value in the global variable nodeLabelsArray
-        nodeLabelsArray[i] = String.fromCharCode(ord_a + i);
+        nodeLabelsArray[i-1] = String.fromCharCode(ord_a + i-1);
         // Add the 'input' event to input boxes so that their value can be used
-        // by other tables with the 'node-label-x' class name, where x is a
+        // by other tables with the 'node-label-x-0' class name, where x is a
         // number from 0 to numberOfNodes-1
         box.addEventListener('input', replaceLabel, false);
     }
 
-    // Populate the header and row label with appropriate values
-
-    // Header
-    id = '#' + tableName + '-header-0';
-    nodeTable.querySelector(id).textContent = 'Joint Number';
-    id = '#' + tableName + '-header-1';
-    nodeTable.querySelector(id).textContent = 'Alphabetic Label';
-    // Row labels
-    for (let i = 0; i < nodeTable.rows.length-1; i++) {
-        let id = '#' + tableName + '-row-' + i;
-        nodeTable.querySelector(id).textContent = i;
-    }
-
-    return nodeTable;
-}
-
-function makeAppliedMomentsTable(numberOfNodes) {
-    // Create table that will accept applied moments at a node
-
-    // id will be used to identify table cells
-    let id;
-    // The 'moments' table will have 2 columns: Alphabetic name of joint, and
-    // moments at joints
-    const totalCols = 2;
-    // totalRows will be a row for each node, plus the header.
-    const totalRows = numberOfNodes + 1;
-    const tableName = tableNames.appliedMoments;
-    let tableSkeleton = makeTable(totalRows, totalCols, false);
-    // Fill in tableSkeleton with tags to display and input data
-    let nodeTable = addTagsToTable(
-        tableSkeleton, tableName, cellTypes.inputNumber, false
-    );
-
-    // Add labels to the table
-
-    // Add name attribute to the <table> tag
-    nodeTable.setAttribute('name', tableName);
-    // Add number-of-nodes attribute to <table> tag for use by other functions
-    nodeTable.setAttribute('number-of-nodes', numberOfNodes);
-
-    /* Unhide to add default value to input box
-    for (let i = 0; i < numberOfNodes; i++) {
-        id = '#' + tableName + '-' + i + '-' +'0';
-        nodeTable.querySelector(id).setAttribute('value', i);
-    }
-    */
-
-    // Populate the header and row label with appropriate values
-
-    // Header
-    id = '#' + tableName + '-header-0';
-    nodeTable.querySelector(id).textContent = 'Alphabetic Label';
-    id = '#' + tableName + '-header-1';
-    nodeTable.querySelector(id).textContent = 'Moment at node';
-
-    // Row labels
-    for (let i = 0; i < numberOfNodes; i++) {
-        let id = '#' + tableName + '-row-' + i;
-        let cell = nodeTable.querySelector(id);
-        cell.textContent = nodeLabelsArray[i];
-        // Add 'node-label-x' class to cell so the replaceLabel event listener
-        // can apply the correct label to it.
-        cell.setAttribute('class', 'node-label-' + i);
-    }
-
-    return nodeTable;
-}
-
-function disableDiagonal(table) {
-    // For tables df, cof & init, input boxes on a diagonal cannot have a value
-    let numberOfNodes = Number(table.getAttribute('number-of-nodes'));
-    let tableName = table.getAttribute('name');
-    for (let i = 0; i < numberOfNodes; i++) {
-        let id = table.querySelector('#' + tableName + '-' + i + '-' + i);
-        id.disabled = true;
-    }
+    return nodes;
 }
 
 function replaceLabel(event) {
@@ -407,54 +280,92 @@ function replaceLabel(event) {
         // Update nodeLabelsArray with the new value
         nodeLabelsArray[index] = newLabel;
 
-        // Get all elements with 'node-label-index' as a class name
-        let labelElements = document.querySelectorAll('.node-label-' + index);
+        // Get all elements with 'node-label-index-0' as a class name
+        let labelElements = document.querySelectorAll(
+            '.node-label-' + index + '-0');
         // Apply new labels to those elements
         for (let i = 0; i < labelElements.length; i++) {
             labelElements[i].textContent = newLabel;
         }
     }
 
-function generateInputTables(event) {
-    // Create all input tables to run the moment distribution method.
+function makeDFTable(numberOfNodes) {
+    // Create distribution factor table
 
-    // Create the table for the names of each joint
+    // Iteration variable
+    let i = 0;
+
+    let name = 'df';
+    let df = new Table(name, numberOfNodes+2, numberOfNodes+1);
+    df.SetCaption('Distribution Factor');
+
+    // Add input boxes
+    let inBox = document.createElement('input');
+    inBox.type = 'number';
+    let start = {x: 1, y: 1};
+    let size = {x: numberOfNodes, y: numberOfNodes};
+    df.setTag(inBox, start, size);
+
+    // Add <span> tags to header, footer and first column
+    // Header
+    let span = document.createElement('span');
+    start = {x: 0, y: 0};
+    size = {x: 1, y: df.cols};
+    df.setTag(span, start, size);
+    // Footer
+    start = {x: df.rows-1, y: 0};
+    size = {x: 1, y: df.cols};
+    df.setTag(span, start, size);
+    // Row label
+    start = {x: 1, y: 0};
+    size = {x: numberOfNodes, y: 1};
+    df.setTag(span, start, size);
+
+    // First cell of table will have table name
+    df.getInnerCell(0, 0).textContent = 'DF';
+    // Bottom-left cell in footer will have the text 'Sum'
+    df.getInnerCell(df.rows-1, 0).textContent = 'Sum';
+    // Add header and row label
+    for (i = 1; i <= numberOfNodes; i++) {
+        df.getInnerCell(0, i).textContent = nodeLabelsArray[i-1];
+        df.getInnerCell(i, 0).textContent = nodeLabelsArray[i-1];
+    }
+
+    // Add class name to header and row labels for detection by replaceLabel
+    // Header
+    start = {x: 0, y: 1};
+    size = {x: 1, y: numberOfNodes};
+    let offset = {x: -1, y: 0};
+    let swap = true;
+    df.setIdClass('node-label', start, size, offset, swap);
+    // Row label
+    start = {x: 1, y: 0};
+    size = {x: numberOfNodes, y: 1};
+    offset = {x: -1, y: 0};
+    df.setIdClass('node-label', start, size, offset);
+
+    return df;
+}
+
+function makeInputTables() {
+
+    // Get the number of nodes from document
     let numberOfNodes = Number(
         document.getElementById('number-of-nodes').value
     );
 
-    let nodeTable = makeNodeTable(numberOfNodes);
-    // Read initial node labels so function calls below can use nodeLabelsArray
-    document.getElementById('input-tables').appendChild(nodeTable);
+    // Create node table where labels for each node will be typed
+    let nodes = makeNodeTable(numberOfNodes);
+    document.getElementById('input-tables').appendChild(nodes.table);
 
-    // Create distribution factor input table
-    let dfTable = makeContentTable(
-        numberOfNodes, tableNames.df, cellTypes.inputNumber
-    )
-    disableDiagonal(dfTable);
-    document.getElementById('input-tables').appendChild(dfTable);
+    // Create distribution factor table
+    let df = makeDFTable(numberOfNodes);
+    document.getElementById('input-tables').appendChild(df.table);
 
-    // Create carry-over factor input table
-    let cofTable = makeContentTable(
-        numberOfNodes, tableNames.cof, cellTypes.inputNumber, false
-    )
-    disableDiagonal(cofTable);
-    document.getElementById('input-tables').appendChild(cofTable);
-
-    // Create initial moments input table
-    let initialMomentsTable = makeContentTable(
-        numberOfNodes, tableNames.initialMoments, cellTypes.inputNumber
-    )
-    disableDiagonal(initialMomentsTable);
-    document.getElementById('input-tables').appendChild(initialMomentsTable);
-
-    // Create applied moments input table
-    let appliedMomentsTable = makeAppliedMomentsTable(numberOfNodes);
-    document.getElementById('input-tables').appendChild(appliedMomentsTable);
 }
 
 return {
-    genTables: generateInputTables
-};
+    makeInTables: makeInputTables
+}
 
 })();
