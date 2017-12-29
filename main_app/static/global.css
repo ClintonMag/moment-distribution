@@ -10,6 +10,11 @@ th, td {
     background: #333;
 }
 
+.input-diagonal {
+    background: #444;
+    border-color: black;
+}
+
 input {
     color: inherit;
     background: black;
