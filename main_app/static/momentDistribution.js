@@ -55,58 +55,93 @@ var momentDist = (function () {
 // Some constants
 const constant = {
     NODES_MIN: 3,
-    NODES_MAX: 20
-}
+    NODES_MAX: 20,
+    NUM_NODES_DEFAULT: 5,
+};
 
-// nodeLabelsArray is used to keep all <td> tags with the class name
-// 'node-label-x' updated.
-var nodeLabelsArray = [];
+// Contains variable names and values used in various places in the code
+var cfg = {
+    // nodeLabelsArray is used to keep all <td> tags with the class name
+    // 'node-label-x' updated.
+    nodeLabelsArray: [],
 
-// All event handlers
-var handlers = {
-    replaceLabel: function(event) {
-        // Respond to 'input' event of the input boxes of the 'nodes' table and
-        // apply the changes to all cells with the class name 'nodes-lable-x'.
-        // Keep the value of the current value in the input box so that it can
-        // be compared to the new value. If the new value is the same as the
-        // previous value, then don't change the DOM.
+    // Contains the number of nodes typed in #number-of-nodes input box
+    numberOfNodes: constant.NUM_NODES_DEFAULT,
 
-        // Determine what element triggered event.
-        let inputBox = this;
+    // Contains names of tables
+    tbl: {
+        nodes: 'nodes',
+        df: 'df',
+        cof: 'cof',
+        init: 'init',
+        moments: 'moments',
+    },
 
-        // Compare new value in the input box with the previous value in that
-        // box
+    // Contains names of classes
+    cls: {
+        nodeLabel: 'node-label',
+        diagonal: 'input-diagonal',
+    },
 
-        // Extract new value of label
-        let newLabel = inputBox.value;
+    // All html id values in the html file, hardcoded or generated.
+    htmlId: {
+        inputNodes: 'input-nodes',
+        numberOfNodes: 'number-of-nodes',
+        inputTables: 'input-tables',
+    },
 
-        // re is the regular expression used to find out the index needed to
-        // extract the correct stored value in nodeLabelsArray.
-        let re = /-(\d+)-/;
-        // exec returns and array. The capture group is at index 1.
-        let index = Number(re.exec(inputBox.id)[1]);
-        // Extract old value
-        let oldLabel = nodeLabelsArray[index];
+    // All html name values hardcoded in the html file
+    htmlName: {
+        makeTables: 'make-tables',
+    },
 
-        if (newLabel === oldLabel) {
-            // Don't modify DOM
-            return;
-        }
+    // All event handlers
+    handlers: {
+        replaceLabel: function(event) {
+            // Respond to 'input' event of the input boxes of the 'nodes' table
+            // and apply the changes to all cells with the class name
+            // 'nodes-lable-x'. Keep the value of the current value in the
+            // input box so that it can be compared to the new value. If the
+            // new value is the same as the previous value, then don't change
+            // the DOM.
 
-        // Update nodeLabelsArray with the new value
-        nodeLabelsArray[index] = newLabel;
+            // Determine what element triggered event.
+            let inputBox = this;
 
-        // Get all elements with 'node-label-index-0' as a class name
-        let labelElements = document.querySelectorAll(
-            '.node-label-' + index + '-0');
-            // Apply new labels to those elements
-            for (let i = 0; i < labelElements.length; i++) {
-                labelElements[i].textContent = newLabel;
+            // Compare new value in the input box with the previous value in
+            // that box.
+
+            // Extract new value of label
+            let newLabel = inputBox.value;
+
+            // re is the regular expression used to find out the index needed
+            // to extract the correct stored value in nodeLabelsArray.
+            let re = /-(\d+)-/;
+            // exec returns and array. The capture group is at index 1.
+            let index = Number(re.exec(inputBox.id)[1]);
+            // Extract old value
+            let oldLabel = cfg.nodeLabelsArray[index];
+
+            if (newLabel === oldLabel) {
+                // Don't modify DOM
+                return;
             }
+
+            // Update nodeLabelsArray with the new value
+            cfg.nodeLabelsArray[index] = newLabel;
+
+            // Get all elements with 'node-label-index-0' as a class name
+            let labelElements = document.querySelectorAll(
+                '.' + cfg.cls.nodeLabel + '-' + index + '-0'
+            );
+                // Apply new labels to those elements
+                for (let i = 0; i < labelElements.length; i++) {
+                    labelElements[i].textContent = newLabel;
+                }
         },
 
         checkNodes: function(event) {
-            // Ensure the #number-of-nodes input box has a value >2 and <=20.
+            // Ensure #number-of-nodes input box has a value >2 and <=20.
             // If not, disable the button[name="make-tables"] button
             let nodes = document.getElementById('number-of-nodes');
             let button = document.getElementsByName('make-tables')[0];
@@ -116,14 +151,83 @@ var handlers = {
             } else {
                 button.disabled = false;
             }
-        }
-    }
+        },
 
-// Some setup code to run upon script load.
+        makeInputTables: function(event) {
 
-// Add 'input' event listener to the 'Generate Input Tables button'
+            // Remove existing tables if present
+            clearInputTables();
+
+            // Get the number of nodes from document
+            let numberOfNodes = Number(
+                document.getElementById('number-of-nodes').value
+            );
+
+            // Update the current number of nodes
+            cfg.numberOfNodes = numberOfNodes;
+
+            // Create node table where labels for each node will be typed
+            let nodes = makeNodeTable(numberOfNodes);
+
+            // Create distribution factor table
+            let df = makeContentTable(cfg.tbl.df, numberOfNodes);
+            df.SetCaption('Distribution Factor');
+
+            // Create carry-over factor table
+            let cof = makeContentTable(cfg.tbl.cof, numberOfNodes);
+            cof.SetCaption('Carry-over Factor');
+            // Hide footer, not needed.
+            cof.table.tFoot.hidden = true;
+
+            // Create initial moments table
+            let init = makeContentTable(cfg.tbl.init, numberOfNodes);
+            init.SetCaption('Initial Moments');
+
+            // Create applied moments table
+            let moments = makeMomentsTable(cfg.tbl.moments, numberOfNodes);
+            moments.SetCaption('Applied Moments');
+            // Hide footer, not needed.
+            moments.table.tFoot.hidden = true;
+
+            // Append the tables to a <div> with id 'input-tables'
+            let inputTablesDiv = document.getElementById('input-tables');
+            inputTablesDiv.appendChild(nodes.table);
+            inputTablesDiv.appendChild(df.table);
+            inputTablesDiv.appendChild(cof.table);
+            inputTablesDiv.appendChild(init.table);
+            inputTablesDiv.appendChild(moments.table);
+
+            // Create a button to start the moment distribution method once
+            // data has been entered into the tables.
+
+            let runButton = document.createElement('button');
+            runButton.type = 'button';
+            runButton.textContent = "Run Calcs";
+            runButton.addEventListener('click', cfg.handlers.runMethod, false);
+            // Button is part of the tables, append to inputTablesDiv
+            inputTablesDiv.appendChild(runButton);
+        },
+
+        runMethod: function(event) {
+            // Start the moment distribution method
+
+            let inputs = getInputs();
+            console.log(inputs);
+        },
+    },
+}
+
+
+// Some setup code that accesses the DOM; must run upon script load.
+
+// Add 'input' event listener to #number-of-nodes input box'
 document.getElementById('number-of-nodes').addEventListener(
-    'input', handlers.checkNodes, false
+    'input', cfg.handlers.checkNodes, false
+);
+
+// Add 'click' event listener to button['make-tables'] button
+document.getElementsByName('make-tables')[0].addEventListener(
+    'click', cfg.handlers.makeInputTables, false
 );
 
 
@@ -274,7 +378,7 @@ function clearInputTables() {
     // Remove all input tables from the #input-tables div
 
     let inputTables = document.getElementById('input-tables');
-    if (inputTables.innerHTML) {
+    if (inputTables) {
         while (inputTables.firstChild) {
             inputTables.removeChild(inputTables.firstChild);
         }
@@ -288,7 +392,7 @@ function makeNodeTable(numberOfNodes) {
     // tags that have the class 'node-label-x-0' on them.
 
     // Create the nodes table
-    let nodes = new Table('nodes', numberOfNodes+2, 2);
+    let nodes = new Table(cfg.tbl.nodes, numberOfNodes+2, 2);
 
     // Hide the footer as not needed
     nodes.table.tFoot.hidden = true;
@@ -333,16 +437,15 @@ function makeNodeTable(numberOfNodes) {
         let box = nodes.getInnerCell(i, 1);
         box.setAttribute('value', String.fromCharCode(ord_a + i-1));
         // Store the initial value in the global variable nodeLabelsArray
-        nodeLabelsArray[i-1] = String.fromCharCode(ord_a + i-1);
+        cfg.nodeLabelsArray[i-1] = String.fromCharCode(ord_a + i-1);
         // Add the 'input' event to input boxes so that their value can be used
         // by other tables with the 'node-label-x-0' class name, where x is a
         // number from 0 to numberOfNodes-1
-        box.addEventListener('input', handlers.replaceLabel, false);
+        box.addEventListener('input', cfg.handlers.replaceLabel, false);
     }
 
     return nodes;
 }
-
 
 function makeContentTable(name, numberOfNodes, inputTag=true) {
     // Create a table with labelled headers and rows, a footer and a central
@@ -382,8 +485,8 @@ function makeContentTable(name, numberOfNodes, inputTag=true) {
     tbl.getInnerCell(tbl.rows-1, 0).textContent = 'Sum';
     // Add header and row label
     for (i = 1; i <= numberOfNodes; i++) {
-        tbl.getInnerCell(0, i).textContent = nodeLabelsArray[i-1];
-        tbl.getInnerCell(i, 0).textContent = nodeLabelsArray[i-1];
+        tbl.getInnerCell(0, i).textContent = cfg.nodeLabelsArray[i-1];
+        tbl.getInnerCell(i, 0).textContent = cfg.nodeLabelsArray[i-1];
     }
 
     // Add class name to header and row labels for detection by replaceLabel
@@ -392,27 +495,27 @@ function makeContentTable(name, numberOfNodes, inputTag=true) {
     size = {x: 1, y: numberOfNodes};
     let offset = {x: -1, y: 0};
     let swap = true;
-    tbl.setIdClass('node-label', start, size, offset, swap);
+    tbl.setIdClass(cfg.cls.nodeLabel, start, size, offset, swap);
     // Row label
     start = {x: 1, y: 0};
     size = {x: numberOfNodes, y: 1};
     offset = {x: -1, y: 0};
-    tbl.setIdClass('node-label', start, size, offset);
+    tbl.setIdClass(cfg.cls.nodeLabel, start, size, offset);
 
     // Disable diagonal input boxes as they shouldn't hold any value
     // Add class 'input-diagonal' for detection through CSS
     for (i = 1; i <= numberOfNodes; i++) {
-        tbl.getInnerCell(i, i).classList.add('input-diagonal');
+        tbl.getInnerCell(i, i).classList.add(cfg.cls.diagonal);
         tbl.getInnerCell(i, i).disabled = true;
     }
 
     return tbl;
 }
 
-function makeMomentsTable(numberOfNodes) {
+function makeMomentsTable(name, numberOfNodes) {
     // Create table that will accept moments applied at the nodes.
 
-    let moments = new Table('moments', numberOfNodes+2, 2);
+    let moments = new Table(name, numberOfNodes+2, 2);
 
     // Hide the footer as not needed
     moments.table.tFoot.hidden = true;
@@ -455,52 +558,73 @@ function makeMomentsTable(numberOfNodes) {
     start = {x: 1, y: 0};
     size = {x: numberOfNodes, y: 1};
     let offset = {x: -1, y: 0};
-    moments.setIdClass('node-label', start, size, offset);
+    moments.setIdClass(cfg.cls.nodeLabel, start, size, offset);
 
     return moments;
 }
 
-function makeInputTables(event) {
+function getInputs() {
+    // Read the data entered into the input tables.
+    // Return an object with arrays containing the data in each table.
 
-    // Remove existing tables if present
-    clearInputTables();
+    let i = 0;
+    // Object that will contain arrays with data from each input table.
+    let inputs = {};
+    // All 2D arrays except moments
+    let df = [];
+    let cof = [];
+    let init = [];
+    let moments = [];
 
-    // Get the number of nodes from document
-    let numberOfNodes = Number(
-        document.getElementById('number-of-nodes').value
-    );
+    // Read inputs from the tables
+    let dfInputs = document
+        .getElementsByName(cfg.tbl.df)[0]
+        .getElementsByTagName('input');
 
-    // Create node table where labels for each node will be typed
-    let nodes = makeNodeTable(numberOfNodes);
-    document.getElementById('input-tables').appendChild(nodes.table);
+    let cofInputs = document
+        .getElementsByName(cfg.tbl.cof)[0]
+        .getElementsByTagName('input');
 
-    // Create distribution factor table
-    let df = makeContentTable('DF', numberOfNodes);
-    df.SetCaption('Distribution Factor');
-    document.getElementById('input-tables').appendChild(df.table);
+    let initInputs = document
+        .getElementsByName(cfg.tbl.init)[0]
+        .getElementsByTagName('input');
 
-    // Create carry-over factor table
-    let cof = makeContentTable('COF', numberOfNodes);
-    cof.SetCaption('Carry-over Factor');
-    // Hide footer, not needed.
-    cof.table.tFoot.hidden = true;
-    document.getElementById('input-tables').appendChild(cof.table);
+    let momentsInputs = document
+        .getElementsByName(cfg.tbl.moments)[0]
+        .getElementsByTagName('input');
 
-    // Create initial moments table
-    let init = makeContentTable('Init', numberOfNodes);
-    init.SetCaption('Initial Moments');
-    document.getElementById('input-tables').appendChild(init.table);
+    // Store current row's data in this array
+    let dfRow = [];
+    let cofRow = [];
+    let initRow = [];
+    // There are numberOfNodes^2 input blocks per df, cof, or init table.
+    for (i = 0; i < cfg.numberOfNodes**2; i++) {
+        dfRow.push(Number(dfInputs[i].value));
+        cofRow.push(Number(cofInputs[i].value));
+        initRow.push(Number(initInputs[i].value));
+        // Push row to main array once entire row has been accessed
+        if ((i % cfg.numberOfNodes) == (cfg.numberOfNodes - 1)) {
+            df.push(dfRow);
+            cof.push(cofRow);
+            init.push(initRow);
+            dfRow = [];
+            cofRow = [];
+            initRow = [];
+        }
+    }
 
-    // Create applied moments table
-    let moments = makeMomentsTable(numberOfNodes);
-    moments.SetCaption('Applied Moments');
-    // Hide footer, not needed.
-    moments.table.tFoot.hidden = true;
-    document.getElementById('input-tables').appendChild(moments.table);
-}
+    // Read input from the moments table
+    for (i = 0; i < cfg.numberOfNodes; i++) {
+        moments.push(Number(momentsInputs[i].value));
+    }
 
-return {
-    makeInTables: makeInputTables
+    // Add the arrays to the main object so it can be returned
+    inputs[cfg.tbl.df] = df;
+    inputs[cfg.tbl.cof] = cof;
+    inputs[cfg.tbl.init] = init;
+    inputs[cfg.tbl.moments] = moments;
+
+    return inputs;
 }
 
 })();

@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 {% block body %}
-    <div id="node-numbers">
+    <div id="input-nodes">
         <span>Enter the number of joints in the structure. They must be more than <strong>2</strong> and less than or equal to <strong>20</strong>.</span><br>
         <input type="number" id="number-of-nodes" value="5"><br>
         <span>This will generate input tables based on the input number of joints.</span><br>
-        <button type="button" name="make-tables" onclick="momentDist.makeInTables();">Generate Input Tables</button>
+        <button type="button" name="make-tables">Generate Input Tables</button>
     </div>
-    <!-- A string of html referring to the input tables will be plugged in this div -->
+     <!-- A string of html referring to the input tables will be plugged in this div -->
     <div id="input-tables"></div>
 {% endblock %}
