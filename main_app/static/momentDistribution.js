@@ -58,6 +58,10 @@ const constant = {
     NODES_MIN: 3,
     NODES_MAX: 20,
     NUM_NODES_DEFAULT: 5,
+    TEXT_MAXLENGTH: 1,
+    MIN_ITERATIONS: 1,
+    MAX_ITERATIONS: 50,
+    MIN_ERROR: 0.001,
 };
 
 // Contains variable names and values used in various places in the code
@@ -69,9 +73,16 @@ var cfg = {
     // Contains the number of nodes typed in #number-of-nodes input box
     numberOfNodes: constant.NUM_NODES_DEFAULT,
 
+    // Contains maximum iterations for the method
+    maxIterations: constant.MAX_ITERATIONS,
+
+    // Contains minimum error stopping condition for the method
+    minError: constant.MIN_ERROR,
+
     // Contains names of tables
     tbl: {
         nodes: 'nodes',
+        connections: 'connections',
         df: 'df',
         cof: 'cof',
         init: 'init',
@@ -87,15 +98,16 @@ var cfg = {
     // All html id values in the html file, hardcoded or generated.
     htmlId: {
         inputNodes: 'input-nodes',
+        minError: 'error',
+        maxIterations: 'iterations',
         numberOfNodes: 'number-of-nodes',
         inputTables: 'input-tables',
         nodeCheckbox: 'node-checkbox',
+        makeTables: 'make-tables',
     },
 
     // All html name values hardcoded in the html file
-    htmlName: {
-        makeTables: 'make-tables',
-    },
+    htmlName: {},
 
     // All event handlers
     handlers: {
@@ -143,13 +155,20 @@ var cfg = {
                 }
         },
 
-        checkNodes: function(event) {
+        checkInputBoxes: function(event) {
             // Ensure #number-of-nodes input box has a value >2 and <=20.
-            // If not, disable the button[name="make-tables"] button
-            let nodes = document.getElementById('number-of-nodes');
-            let button = document.getElementsByName('make-tables')[0];
-            if (Number(nodes.value)<constant.NODES_MIN ||
-            Number(nodes.value)>constant.NODES_MAX) {
+            // If not, disable the #make-tables button
+            let nodes = document.getElementById(cfg.htmlId.numberOfNodes);
+            let iterations = document.getElementById(cfg.htmlId.maxIterations);
+            let error = document.getElementById(cfg.htmlId.minError);
+            let button = document.getElementById(cfg.htmlId.makeTables);
+            // console.log(nodes, iterations, error, button);
+            if (Number(nodes.value)<constant.NODES_MIN
+                || Number(nodes.value)>constant.NODES_MAX
+                || Number(iterations.value)<constant.MIN_ITERATIONS
+                || Number(iterations.value)>constant.MAX_ITERATIONS
+                || Number(error.value)<constant.MIN_ERROR)
+            {
                 button.disabled = true;
             } else {
                 button.disabled = false;
@@ -161,33 +180,38 @@ var cfg = {
             // Remove existing tables if present
             clearInputTables();
 
-            // Get the number of nodes from document
-            let numberOfNodes = Number(
+            // Get initial values from document
+            cfg.numberOfNodes = Number(
                 document.getElementById('number-of-nodes').value
             );
 
-            // Update the current number of nodes
-            cfg.numberOfNodes = numberOfNodes;
+            cfg.maxIterations = Number(
+                document.getElementById(cfg.htmlId.maxIterations).value
+            )
+
+            cfg.minError = Number(
+                document.getElementById(cfg.htmlId.minError).value
+            )
 
             // Create node table where labels for each node will be typed
-            let nodes = makeNodeTable(numberOfNodes);
+            let nodes = makeNodeTable(cfg.numberOfNodes);
 
             // Create distribution factor table
-            let df = makeContentTable(cfg.tbl.df, numberOfNodes);
+            let df = makeContentTable(cfg.tbl.df, cfg.numberOfNodes);
             df.SetCaption('Distribution Factor');
 
             // Create carry-over factor table
-            let cof = makeContentTable(cfg.tbl.cof, numberOfNodes);
+            let cof = makeContentTable(cfg.tbl.cof, cfg.numberOfNodes);
             cof.SetCaption('Carry-over Factor');
             // Hide footer, not needed.
             cof.table.tFoot.hidden = true;
 
             // Create initial moments table
-            let init = makeContentTable(cfg.tbl.init, numberOfNodes);
+            let init = makeContentTable(cfg.tbl.init, cfg.numberOfNodes);
             init.SetCaption('Initial Moments');
 
             // Create applied moments table
-            let moments = makeMomentsTable(cfg.tbl.moments, numberOfNodes);
+            let moments = makeMomentsTable(cfg.tbl.moments, cfg.numberOfNodes);
             moments.SetCaption('Applied Moments');
             // Hide footer, not needed.
             moments.table.tFoot.hidden = true;
@@ -223,13 +247,21 @@ var cfg = {
 
 // Some setup code that accesses the DOM; must run upon script load.
 
-// Add 'input' event listener to #number-of-nodes input box'
-document.getElementById('number-of-nodes').addEventListener(
-    'input', cfg.handlers.checkNodes, false
+// Add 'input' event listener to initial input boxes'
+document.getElementById(cfg.htmlId.numberOfNodes).addEventListener(
+    'input', cfg.handlers.checkInputBoxes, false
 );
 
-// Add 'click' event listener to button['make-tables'] button
-document.getElementsByName('make-tables')[0].addEventListener(
+document.getElementById(cfg.htmlId.maxIterations).addEventListener(
+    'input', cfg.handlers.checkInputBoxes, false
+);
+
+document.getElementById(cfg.htmlId.minError).addEventListener(
+    'input', cfg.handlers.checkInputBoxes, false
+);
+
+// Add 'click' event listener to #make-tables button
+document.getElementById(cfg.htmlId.makeTables).addEventListener(
     'click', cfg.handlers.makeInputTables, false
 );
 
@@ -415,7 +447,7 @@ function makeNodeTable(numberOfNodes) {
     let inputNumber = document.createElement('input');
     inputNumber.type = 'text';
     inputNumber.size = 3;
-    inputNumber.setAttribute('maxlength', 3);
+    inputNumber.setAttribute('maxlength', constant.TEXT_MAXLENGTH);
     let start = {x: 1, y: 1};
     let size = {x: numberOfNodes, y: 1};
     nodes.setTag(inputNumber, start, size);
@@ -640,12 +672,43 @@ function getInputs() {
     // Object that will contain arrays with data from each input table.
     let inputs = {};
     // All 2D arrays except moments
+    // connections stores true/false values such that connections[x][y]=true
+    // means node x is connected to node y.
+    let connections = [];
     let df = [];
     let cof = [];
     let init = [];
     let moments = [];
 
+    let maxIterations = 0;
+    let minError = 0;
+
     // Read inputs from the tables
+
+    // Read checkboxes
+    let ord_a = 'a'.charCodeAt(0);
+    for (let i = 0; i < cfg.numberOfNodes; i++) {
+        // Used to select the node that node 'i' is connected to. See
+        // makeNodeTable for similar technique.
+        let node = 0;
+        let row = [];
+        for (let j = 0; j < cfg.numberOfNodes-1; j++) {
+            if (i === j) {
+                node += 1;
+            }
+            let checkbox = document.getElementById(
+                `${cfg.htmlId.nodeCheckbox}-${cfg.nodeLabelsArray[i]}` +
+                `-${cfg.nodeLabelsArray[node]}`
+            );
+            console.log(cfg.nodeLabelsArray[i], cfg.nodeLabelsArray[node]);
+            console.log(checkbox);
+            row[j] = checkbox.checked;
+            node += 1;
+        }
+        // Append row checkbox states
+        connections.push(row);
+    }
+
     let dfInputs = document
         .getElementsByName(cfg.tbl.df)[0]
         .getElementsByTagName('input');
@@ -688,12 +751,18 @@ function getInputs() {
     }
 
     // Add the arrays to the main object so it can be returned
+    inputs[cfg.tbl.connections] = connections;
     inputs[cfg.tbl.df] = df;
     inputs[cfg.tbl.cof] = cof;
     inputs[cfg.tbl.init] = init;
     inputs[cfg.tbl.moments] = moments;
 
     return inputs;
+}
+
+function startIterations(inputs) {
+    //
+
 }
 
 })();
