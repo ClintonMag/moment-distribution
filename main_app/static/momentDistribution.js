@@ -239,7 +239,7 @@ var cfg = {
             // Start the moment distribution method
 
             let inputs = getInputs();
-            console.log(inputs);
+            startIterations(inputs);
         },
     },
 }
@@ -700,8 +700,6 @@ function getInputs() {
                 `${cfg.htmlId.nodeCheckbox}-${cfg.nodeLabelsArray[i]}` +
                 `-${cfg.nodeLabelsArray[node]}`
             );
-            console.log(cfg.nodeLabelsArray[i], cfg.nodeLabelsArray[node]);
-            console.log(checkbox);
             row[j] = checkbox.checked;
             node += 1;
         }
@@ -761,8 +759,84 @@ function getInputs() {
 }
 
 function startIterations(inputs) {
-    //
+    // Run the method until maximum iterations reached, or error is less
+    // than the minimum.
 
+    // Object containing all the arrays after method has run
+    let calcs = {};
+
+    // Current calculated balance for a node
+    let tmpBal = 0;
+    // Current calculated carry-over factor moment transferred to a node
+    let tmpCof = 0;
+    // The bal array for the current iteration
+    let iterBal = [];
+    // The cof array for the current iteration
+    let iterCof = makeEmptyArray(cfg.numberOfNodes, cfg.numberOfNodes);
+    // Contains sum of elements in each column of the init array
+    let initTotal = [];
+    // Multidimension array that carries data from each iteration; contains
+    // multiple iterBal arrays.
+    let bal = [];
+    // Used to compute the balance for the current iteration
+    let curBal = [];
+    // Used to compute the current moment carried over to connecting joint
+    let curCof = [];
+    // Contains current running total of the moment at a joint
+    let total = [];
+
+    // Calculate sum of elements in each column of the init array. Required
+    // in the first iteration
+    for (let i = 0; i < inputs.init.length; i++) {
+        let total = 0;
+        for (let j = 0; j < inputs.init.length; j++) {
+            total += inputs.init[j][i]
+        }
+        initTotal.push(total);
+    }
+
+    // First iteration
+
+    for (let i = 0; i < cfg.numberOfNodes; i++) {
+        curBal = [];
+        for (let j = 0; j < cfg.numberOfNodes; j++) {
+            tmpBal = inputs.df[i][j] * (inputs.moments[j] - initTotal[j]);
+            curBal.push(tmpBal);
+            tmpCof = inputs.cof[i][j] * tmpBal;
+            iterCof[j][i] = tmpCof;
+        }
+        iterBal.push(curBal);
+    }
+    console.log(iterBal, iterCof);
+    // Push first iteration's iterBal to bal
+    bal.push(iterBal);
+
+    // cof
+
+
+    if (cfg.maxIterations === 1) {
+        // TODO: Setup calcs with all relevant values here before returning it
+        return calcs;
+    }
+
+    return;
+}
+
+function makeEmptyArray(rows, cols) {
+    // Create a zero-filled rows x cols array
+
+    let tmp = [];
+    let arr = [];
+
+    for (let i = 0; i < rows; i++) {
+        tmp = [];
+        for (let j = 0; j < cols; j++) {
+            tmp.push(0);
+        }
+        arr.push(tmp);
+    }
+
+    return arr;
 }
 
 })();
