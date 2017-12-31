@@ -125,7 +125,8 @@ var cfg = {
             let oldLabel = cfg.nodeLabelsArray[index];
 
             if (newLabel === oldLabel) {
-                // Don't modify DOM
+                // Don't modify DOM if the label hasn't changed despite event
+                // being triggered.
                 return;
             }
 
@@ -134,7 +135,7 @@ var cfg = {
 
             // Get all elements with 'node-label-index-0' as a class name
             let labelElements = document.querySelectorAll(
-                '.' + cfg.cls.nodeLabel + '-' + index + '-0'
+                `.${cfg.cls.nodeLabel}-${index}-0`
             );
                 // Apply new labels to those elements
                 for (let i = 0; i < labelElements.length; i++) {
@@ -346,7 +347,7 @@ class Table {
                 let yInc = swap ? i : j;
                 if (attachCoords) {
                     this.getInnerCell(i, j).classList.add(
-                      className + '-' + (xInc+offset.x) + '-' + (yInc+offset.y)
+                        `${className}-${xInc+offset.x}-${yInc+offset.y}`
                     );
                 } else {
                     this.getInnerCell(i, j).classList.add(className);
@@ -370,7 +371,7 @@ class Table {
         for (let i = start.x; i < start.x+size.x; i++) {
             for (let j = start.y; j < start.y+size.y; j++) {
                 this.getInnerCell(i, j).id =
-                    idName + '-' + (i+offset.x) + '-' + (j+offset.y);
+                `${idName}-${i+offset.x}-${j+offset.y}`;
             }
         }
     }
