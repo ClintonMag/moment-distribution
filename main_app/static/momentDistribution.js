@@ -45,6 +45,7 @@ the applied forces specified.
 */
 
 // TODO: Add minimum and maximum values to input boxes and enforce them.
+// Add tick boxes at nodes table to determine connection between nodes
 
 var momentDist = (function () {
 
@@ -88,6 +89,7 @@ var cfg = {
         inputNodes: 'input-nodes',
         numberOfNodes: 'number-of-nodes',
         inputTables: 'input-tables',
+        nodeCheckbox: 'node-checkbox',
     },
 
     // All html name values hardcoded in the html file
@@ -386,13 +388,24 @@ function clearInputTables() {
 }
 
 function makeNodeTable(numberOfNodes) {
-    // Create the table for labelling nodes.
+    // Create the table for labelling nodes. Create the checkboxes for
+    // establishing connections between the nodes.
 
     // This table will be used to set the textContent of the <span> of td
     // tags that have the class 'node-label-x-0' on them.
 
     // Create the nodes table
-    let nodes = new Table(cfg.tbl.nodes, numberOfNodes+2, 2);
+
+    // cols = 1st column for row labels +       (1 column)
+    //        input boxes for node labels +     (1 column)
+    //        number of possible connections    (1 less than numberOfNodes)
+    //        one node can have with another
+    //        i.e. if 3 nodes a,b,c:
+    //        a can connect to b,c;
+    //        b can connect to a,c;
+    //        c can connect to a,b;
+    let cols = 1 + 1 + (numberOfNodes - 1);
+    let nodes = new Table(cfg.tbl.nodes, numberOfNodes+2, cols);
 
     // Hide the footer as not needed
     nodes.table.tFoot.hidden = true;
@@ -442,6 +455,61 @@ function makeNodeTable(numberOfNodes) {
         // by other tables with the 'node-label-x-0' class name, where x is a
         // number from 0 to numberOfNodes-1
         box.addEventListener('input', cfg.handlers.replaceLabel, false);
+    }
+
+    // Create the checkboxes
+
+    let labelledBox = document.createElement('label');
+    let checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    labelledBox.appendChild(checkbox);
+
+    // Append checkboxes to the remaining <td> tags in the table
+    start = {x: 1, y: 2};
+    size = {x: numberOfNodes, y: numberOfNodes-1};
+    nodes.setTag(labelledBox, start, size);
+
+    // Set checkbox attributes
+    // Set id for each checkbox
+    // The id is in the form 'node-checkbox-x-y' where x,y are nodes as entered
+    // in the 'nodes' table.
+    // i,j are used to navigate the nodes table. But also:
+    // 'i' represents current node, node represents the node i is connected to.
+    for (let i = 0; i < numberOfNodes; i++) {
+        let node = 0;
+        for (let j = 0; j < numberOfNodes-1; j++) {
+            if (i === j) {
+                node += 1;
+            }
+            // 2+j: 2 is to skip first 2 columns, which are not for checkboxes.
+            let label = nodes.getInnerCell(i+1, 2+j);
+            label.firstChild.id = (
+                `${cfg.htmlId.nodeCheckbox}`
+                + `-${cfg.nodeLabelsArray[i]}-${cfg.nodeLabelsArray[node]}`
+            );
+
+            // Set the text inside each label to the node represented by j
+            let span = document.createElement('span');
+            span.textContent = cfg.nodeLabelsArray[node];
+            // Set class 'node-label-x-0' to each span in the label
+            span.classList.add(`${cfg.cls.nodeLabel}-${node}-0`);
+            // Append child to ensure the innerHTML of label contains the
+            // checkbox first, then the span second. The order is important.
+            label.appendChild(span.cloneNode(true));
+
+            // Set node to select the next label from nodeLabelsArray
+            node += 1;
+        }
+    }
+
+    // Set heading above the check boxes to 'Node Connection'
+    let checkboxHeading = nodes.table.rows[0].cells[2];
+    checkboxHeading.textContent = 'Node Connection';
+    // Set colspan to 4
+    checkboxHeading.setAttribute('colspan', numberOfNodes-1);
+    // Hide the remaining (numberOfNodes-2) columns of the table
+    for (let i = 0; i < numberOfNodes-2; i++) {
+        nodes.table.rows[0].cells[3+i].hidden = true;
     }
 
     return nodes;
