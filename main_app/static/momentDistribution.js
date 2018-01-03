@@ -45,7 +45,9 @@ the applied forces specified.
 */
 
 // TODO: Add minimum and maximum values to input boxes and enforce them.
-// Add tick boxes at nodes table to determine connection between nodes
+// Correctly round of floats to a specific decimal.
+// Using CSS if possible, highlight currenlty select row and column label in
+// the input cells.
 
 var momentDist = (function () {
 
@@ -769,10 +771,15 @@ function startIterations(inputs) {
     let tmpBal = 0;
     // Current calculated carry-over factor moment transferred to a node
     let tmpCof = 0;
+    // Current calculated sum of previous moment at a joint, current balance at
+    // that joint, and carry-over moment transferred to that node.
+    let tmpTot = 0;
     // The bal array for the current iteration
     let iterBal = [];
     // The cof array for the current iteration
-    let iterCof = makeEmptyArray(cfg.numberOfNodes, cfg.numberOfNodes);
+    let iterCof = [];
+    // The running total of moments at joint at the current iteration
+    let iterTot = [];
     // Contains sum of elements in each column of the init array
     let initTotal = [];
     // Multidimension array that carries data from each iteration; contains
@@ -783,7 +790,7 @@ function startIterations(inputs) {
     // Used to compute the current moment carried over to connecting joint
     let curCof = [];
     // Contains current running total of the moment at a joint
-    let total = [];
+    let curTot = [];
 
     // Calculate sum of elements in each column of the init array. Required
     // in the first iteration
@@ -797,22 +804,38 @@ function startIterations(inputs) {
 
     // First iteration
 
+    // iterCof requires iterBal to be populated, so iterBal is populated here.
     for (let i = 0; i < cfg.numberOfNodes; i++) {
         curBal = [];
         for (let j = 0; j < cfg.numberOfNodes; j++) {
             tmpBal = inputs.df[i][j] * (inputs.moments[j] - initTotal[j]);
             curBal.push(tmpBal);
-            tmpCof = inputs.cof[i][j] * tmpBal;
-            iterCof[j][i] = tmpCof;
         }
         iterBal.push(curBal);
     }
-    console.log(iterBal, iterCof);
-    // Push first iteration's iterBal to bal
-    bal.push(iterBal);
 
-    // cof
+    // iterCof
+    for (let i = 0; i < cfg.numberOfNodes; i++) {
+        curCof = [];
+        for (let j = 0; j < cfg.numberOfNodes; j++) {
+            tmpBal = iterBal[j][i];
+            tmpCof = inputs.cof[j][i] * tmpBal;
+            curCof.push(tmpCof);
+        }
+        iterCof.push(curCof);
+    }
 
+    // iterTot
+    for (let i = 0; i < cfg.numberOfNodes; i++) {
+        curTot = [];
+        for (let j = 0; j < cfg.numberOfNodes; j++) {
+            tmpTot = inputs.init[i][j] + iterBal[i][j] + iterCof[i][j];
+            curTot.push(tmpTot);
+        }
+        iterTot.push(curTot);
+    }
+
+    // First iteration complete
 
     if (cfg.maxIterations === 1) {
         // TODO: Setup calcs with all relevant values here before returning it
@@ -837,6 +860,10 @@ function makeEmptyArray(rows, cols) {
     }
 
     return arr;
+}
+
+function testCase() {
+    // Automatically enters numbers in the appropriate cells
 }
 
 })();
