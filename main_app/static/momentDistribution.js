@@ -97,6 +97,8 @@ var cfg = {
         bal: 'bal',
         cof: 'cof',
         tot: 'total',
+        err: 'err',
+        iter: 'iter',
     },
 
     // Contains names of classes
@@ -112,6 +114,7 @@ var cfg = {
         maxIterations: 'iterations',
         numberOfNodes: 'number-of-nodes',
         inputTables: 'input-tables',
+        outputTable: 'output-table',
         nodeCheckbox: 'node-checkbox',
         makeTables: 'make-tables',
     },
@@ -248,9 +251,12 @@ var cfg = {
         runMethod: function(event) {
             // Start the moment distribution method
 
+            // Read inputs
             let inputs = getInputs();
+            // Run the method to completion
             let calcs = startIterations(inputs);
-            console.log(calcs);
+            // Show the results
+            showResults(calcs);
         },
     },
 }
@@ -773,12 +779,14 @@ function startIterations(inputs) {
     // Run the method until maximum iterations reached, or error is less
     // than the minimum.
 
-    // Object containing all the arrays after method has run.
+    // Object containing all the arrays after method has run except iterations.
     // The values of each key in calcs is a 3D array.
     let calcs = {};
     calcs[cfg.out.bal] = [];
     calcs[cfg.out.cof] = [];
     calcs[cfg.out.tot] = [];
+    calcs[cfg.out.err] = [0];
+    calcs[cfg.out.iter] = 0;
 
     // Current calculated balance for a node
     let tmpBal = 0;
@@ -787,12 +795,16 @@ function startIterations(inputs) {
     // Current calculated sum of previous moment at a joint, current balance at
     // that joint, and carry-over moment transferred to that node.
     let tmpTot = 0;
+    // Error calculated for the current moment
+    let tmpErr = 0;
     // The bal array for the current iteration
     let iterBal = [];
     // The cof array for the current iteration
     let iterCof = [];
     // The running total of moments at joint at the current iteration
     let iterTot = [];
+    // Error at moment for all moments for the current iteration
+    let iterErr = [];
     // Contains sum of elements in each column of the init array
     let initTotal = [];
     // Multidimension array that carries data from each iteration; contains
@@ -804,6 +816,8 @@ function startIterations(inputs) {
     let curCof = [];
     // Contains current running total of the moment at a joint
     let curTot = [];
+    // Contains error for all moment connected to joint represented by i.
+    let curErr = [];
 
     // Calculate sum of elements in each column of the init array. Required
     // in the first iteration
@@ -846,7 +860,7 @@ function startIterations(inputs) {
     calcs[cfg.out.bal].push(iterBal);
     calcs[cfg.out.cof].push(iterCof);
     calcs[cfg.out.tot].push(iterTot);
-
+    calcs[cfg.out.iter] = 1;
     // First iteration complete
 
     if (cfg.maxIterations === 1) {
@@ -856,12 +870,15 @@ function startIterations(inputs) {
     // Remaining iterations
 
     let iteration = 1;
-    let error = 100;
+    // Highest % error of all moments for the current iteration
+    let maxError = 0;
     while (iteration < cfg.maxIterations) {
         // Clear for new iteration
         iterBal = [];
         iterCof = [];
         iterTot = [];
+        iterErr = [];
+        maxError = 0;
         // The sum of the columns of the iterTot array from previous iteration
         let sumOfTot = sumOfColumns(calcs[cfg.out.tot][iteration-1]);
 
@@ -897,14 +914,77 @@ function startIterations(inputs) {
             iterTot.push(curTot);
         }
 
+        // Check error
+        for (let i = 0; i < cfg.numberOfNodes; i++) {
+            curErr = [];
+            for (let j = 0; j < cfg.numberOfNodes; j++) {
+                tmpBal = iterBal[i][j];
+                tmpCof = iterCof[i][j];
+                tmpTot = iterTot[i][j];
+                let prevCof = calcs[cfg.out.cof][iteration-1][i][j];
+                if (tmpTot !== 0
+                    && tmpBal !== 0
+                    && Math.abs(tmpTot) >= Math.abs(tmpBal))
+                {
+                    // Use bal to calculate error
+                    tmpErr = (tmpBal / tmpTot) * 100;
+                }
+                else if (tmpTot !== 0
+                    && prevCof !== 0
+                    && Math.abs(tmpTot) >= Math.abs(prevCof))
+                {
+                    // If bal unavailable use COF to calculate error
+                    tmpErr = (prevCof / tmpTot) * 100;
+                }
+                else if (prevCof !== 0)
+                {
+                    // Inflate the error so that iterations continue. This is
+                    // done because we're using abs. value of bal as stopping
+                    // condition if the normal error can't be calculated.
+                    tmpErr = prevCof * 100;
+                }
+                else if (tmpBal !== 0)
+                {
+                    // Last resort if normal error can't be computed.
+                    tmpErr = tmpBal * 100;
+                }
+                else
+                {
+                    // If both bal and COF unavailable, like at pin, then
+                    // err = 0
+                    tmpErr = 0;
+                }
+
+                if (Math.abs(tmpErr) > maxError) {
+                    maxError = Math.abs(tmpErr);
+                }
+
+                curErr.push(tmpErr);
+            }
+            iterErr.push(curErr);
+        }
+
+        iteration += 1;
+
         // Push the current iteration arrays to the calcs object
         calcs[cfg.out.bal].push(iterBal);
         calcs[cfg.out.cof].push(iterCof);
         calcs[cfg.out.tot].push(iterTot);
-        iteration += 1;
+        calcs[cfg.out.err].push(iterErr);
+        calcs[cfg.out.iter] = iteration;
+
+        if (maxError < cfg.minError) {
+            return calcs;
+        }
     }
 
     return calcs;
+}
+
+function showResults(calcs) {
+    // Organize and display the outputs to the 'output-table' div
+
+    
 }
 
 function makeEmptyArray(rows, cols) {
