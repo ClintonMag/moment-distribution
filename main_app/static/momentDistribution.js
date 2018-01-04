@@ -46,7 +46,7 @@ the applied forces specified.
 
 // TODO: Add minimum and maximum values to input boxes and enforce them.
 // Correctly round of floats to a specific decimal.
-// Using CSS if possible, highlight currenlty select row and column label in
+// Using CSS if possible, highlight currently select row and column label in
 // the input cells.
 
 var momentDist = (function () {
@@ -89,6 +89,7 @@ var cfg = {
         cof: 'cof',
         init: 'init',
         moments: 'moments',
+        outputs: 'outputs',
     },
 
     // Contains names of keys used in the object containing the output of the
@@ -185,6 +186,21 @@ var cfg = {
             }
         },
 
+        checkCheckboxes: function (event) {
+            // Automatically checks a checkbox with a connection to another
+
+            // Regular expression to capture index of checkbox
+            let re = /-(\d+)-(\d+)/;
+            // console.log(event.target, typeof event.target);
+            let boxIndices = re.exec(event.target.id);
+            // Automatically check/uncheck the box with id:
+            // `${cfg.htmlId.nodeCheckbox}-${boxIndices[2]}-${boxIndices[1]}`
+            document.getElementById(
+                `${cfg.htmlId.nodeCheckbox}-${boxIndices[2]}-${boxIndices[1]}`
+            )
+            .checked = event.target.checked;
+        },
+
         makeInputTables: function(event) {
 
             // Remove existing tables if present
@@ -256,7 +272,7 @@ var cfg = {
             // Run the method to completion
             let calcs = startIterations(inputs);
             // Show the results
-            showResults(calcs);
+            showResults(inputs[cfg.tbl.connections], calcs);
         },
     },
 }
@@ -513,7 +529,6 @@ function makeNodeTable(numberOfNodes) {
     let checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     labelledBox.appendChild(checkbox);
-
     // Append checkboxes to the remaining <td> tags in the table
     start = {x: 1, y: 2};
     size = {x: numberOfNodes, y: numberOfNodes-1};
@@ -534,8 +549,11 @@ function makeNodeTable(numberOfNodes) {
             // 2+j: 2 is to skip first 2 columns, which are not for checkboxes.
             let label = nodes.getInnerCell(i+1, 2+j);
             label.firstChild.id = (
-                `${cfg.htmlId.nodeCheckbox}`
-                + `-${cfg.nodeLabelsArray[i]}-${cfg.nodeLabelsArray[node]}`
+                `${cfg.htmlId.nodeCheckbox}` + `-${i}-${node}`
+            );
+            // Add 'change' event listener to checkbox
+            label.firstChild.addEventListener(
+                'change', cfg.handlers.checkCheckboxes, false
             );
 
             // Set the text inside each label to the node represented by j
@@ -714,8 +732,7 @@ function getInputs() {
                 node += 1;
             }
             let checkbox = document.getElementById(
-                `${cfg.htmlId.nodeCheckbox}-${cfg.nodeLabelsArray[i]}` +
-                `-${cfg.nodeLabelsArray[node]}`
+                `${cfg.htmlId.nodeCheckbox}-${i}-${node}`
             );
             row[j] = checkbox.checked;
             node += 1;
@@ -981,10 +998,46 @@ function startIterations(inputs) {
     return calcs;
 }
 
-function showResults(calcs) {
+function showResults(connections, calcs) {
     // Organize and display the outputs to the 'output-table' div
 
-    
+    // Determine output table width
+    // forces is the number of forces (moments) in the structure. This is the
+    // number of input checkboxes that have been ticked.
+    let forces = 0;
+    for (let row of connections) {
+        for (let box of row) {
+            // Increase number of forces if checkbox is ticked.
+            forces += box ? 1 : 0;
+        }
+    }
+
+    // 1: for the first column of row labels,
+    // forces: each force takes up a column in the output table
+    // (cfg.numberOfNodes-1): There is a column of empty space between the
+    // forces of each node in the table, except the last node which doesn't
+    // need it.
+    let cols = 1 + forces + (cfg.numberOfNodes-1)
+
+    // 5: First 5 rows are labels for each column
+    // calcs.iterations*2 - 1: each iteration creates a 'bal' and 'cof' row,
+    // except the last row which only has a 'bal'.
+    // 2: After output of the iterations, there is 1 blank row, then a row with
+    // the final calculated moments at each node.
+    let rows = 5 + calcs[cfg.out.iter]*2 - 1 + 2;
+    let output = new Table(cfg.tbl.outputs, rows, cols);
+
+    // Add <span> tags
+    let span = document.createElement('span');
+    span.textContent = "Hi."
+    let start = {x: 0, y: 0};
+    let size = {x: 5, y: cols};
+    output.setTag(span, start, size);
+
+    // Add labels to header
+    // TODO: Set colspan of first row to number of forces at that joint.
+    output.getInnerCell(0, 0).textContent = 'Joint';
+    console.log(output.table);
 }
 
 function makeEmptyArray(rows, cols) {
