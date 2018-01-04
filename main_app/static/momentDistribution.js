@@ -81,7 +81,7 @@ var cfg = {
     // Contains minimum error stopping condition for the method
     minError: constant.MIN_ERROR,
 
-    // Contains names of tables
+    // Contains names of input tables
     tbl: {
         nodes: 'nodes',
         connections: 'connections',
@@ -89,6 +89,14 @@ var cfg = {
         cof: 'cof',
         init: 'init',
         moments: 'moments',
+    },
+
+    // Contains names of keys used in the object containing the output of the
+    // method
+    out: {
+        bal: 'bal',
+        cof: 'cof',
+        tot: 'total',
     },
 
     // Contains names of classes
@@ -107,9 +115,6 @@ var cfg = {
         nodeCheckbox: 'node-checkbox',
         makeTables: 'make-tables',
     },
-
-    // All html name values hardcoded in the html file
-    htmlName: {},
 
     // All event handlers
     handlers: {
@@ -235,13 +240,17 @@ var cfg = {
             runButton.addEventListener('click', cfg.handlers.runMethod, false);
             // Button is part of the tables, append to inputTablesDiv
             inputTablesDiv.appendChild(runButton);
+
+            // Fill in some test values
+            testCase();
         },
 
         runMethod: function(event) {
             // Start the moment distribution method
 
             let inputs = getInputs();
-            startIterations(inputs);
+            let calcs = startIterations(inputs);
+            console.log(calcs);
         },
     },
 }
@@ -764,8 +773,12 @@ function startIterations(inputs) {
     // Run the method until maximum iterations reached, or error is less
     // than the minimum.
 
-    // Object containing all the arrays after method has run
+    // Object containing all the arrays after method has run.
+    // The values of each key in calcs is a 3D array.
     let calcs = {};
+    calcs[cfg.out.bal] = [];
+    calcs[cfg.out.cof] = [];
+    calcs[cfg.out.tot] = [];
 
     // Current calculated balance for a node
     let tmpBal = 0;
@@ -794,13 +807,7 @@ function startIterations(inputs) {
 
     // Calculate sum of elements in each column of the init array. Required
     // in the first iteration
-    for (let i = 0; i < inputs.init.length; i++) {
-        let total = 0;
-        for (let j = 0; j < inputs.init.length; j++) {
-            total += inputs.init[j][i]
-        }
-        initTotal.push(total);
-    }
+    initTotal = sumOfColumns(inputs.init);
 
     // First iteration
 
@@ -835,14 +842,69 @@ function startIterations(inputs) {
         iterTot.push(curTot);
     }
 
+    // Push the first iteration arrays to the calcs object
+    calcs[cfg.out.bal].push(iterBal);
+    calcs[cfg.out.cof].push(iterCof);
+    calcs[cfg.out.tot].push(iterTot);
+
     // First iteration complete
 
     if (cfg.maxIterations === 1) {
-        // TODO: Setup calcs with all relevant values here before returning it
         return calcs;
     }
 
-    return;
+    // Remaining iterations
+
+    let iteration = 1;
+    let error = 100;
+    while (iteration < cfg.maxIterations) {
+        // Clear for new iteration
+        iterBal = [];
+        iterCof = [];
+        iterTot = [];
+        // The sum of the columns of the iterTot array from previous iteration
+        let sumOfTot = sumOfColumns(calcs[cfg.out.tot][iteration-1]);
+
+        for (let i = 0; i < cfg.numberOfNodes; i++) {
+            curBal = [];
+            for (let j = 0; j < cfg.numberOfNodes; j++) {
+                tmpBal = inputs.df[i][j] * (inputs.moments[j] - sumOfTot[j]);
+                curBal.push(tmpBal);
+            }
+            iterBal.push(curBal);
+        }
+
+        // iterCof
+        for (let i = 0; i < cfg.numberOfNodes; i++) {
+            curCof = [];
+            for (let j = 0; j < cfg.numberOfNodes; j++) {
+                tmpBal = iterBal[j][i];
+                tmpCof = inputs.cof[j][i] * tmpBal;
+                curCof.push(tmpCof);
+            }
+            iterCof.push(curCof);
+        }
+
+        // iterTot
+        for (let i = 0; i < cfg.numberOfNodes; i++) {
+            curTot = [];
+            for (let j = 0; j < cfg.numberOfNodes; j++) {
+                tmpTot = calcs[cfg.out.tot][iteration-1][i][j]
+                         + iterBal[i][j]
+                         + iterCof[i][j];
+                curTot.push(tmpTot);
+            }
+            iterTot.push(curTot);
+        }
+
+        // Push the current iteration arrays to the calcs object
+        calcs[cfg.out.bal].push(iterBal);
+        calcs[cfg.out.cof].push(iterCof);
+        calcs[cfg.out.tot].push(iterTot);
+        iteration += 1;
+    }
+
+    return calcs;
 }
 
 function makeEmptyArray(rows, cols) {
@@ -862,8 +924,51 @@ function makeEmptyArray(rows, cols) {
     return arr;
 }
 
+function sumOfColumns(my2DArray) {
+    // Calculate the sum of the columns of a 2D array. Return 1D array.
+
+    let sums = [];
+    for (let i = 0; i < my2DArray.length; i++) {
+        let total = 0;
+        for (let j = 0; j < my2DArray.length; j++) {
+            total += my2DArray[j][i];
+        }
+        sums.push(total);
+    }
+    return sums;
+}
+
 function testCase() {
     // Automatically enters numbers in the appropriate cells
+    let df = document.getElementsByName(cfg.tbl.df)[0];
+    df.tBodies[0].rows[0].cells[2].firstChild.value = 0.364;
+    df.tBodies[0].rows[1].cells[3].firstChild.value = 0.273;
+    df.tBodies[0].rows[1].cells[5].firstChild.value = 0.571;
+    df.tBodies[0].rows[2].cells[2].firstChild.value = 0.273;
+    df.tBodies[0].rows[2].cells[6].firstChild.value = 0.571;
+    df.tBodies[0].rows[3].cells[2].firstChild.value = 0.364;
+    df.tBodies[0].rows[3].cells[3].firstChild.value = 0.364;
+    df.tBodies[0].rows[4].cells[6].firstChild.value = 0.429;
+    df.tBodies[0].rows[5].cells[3].firstChild.value = 0.364;
+    df.tBodies[0].rows[5].cells[5].firstChild.value = 0.429;
+
+    df = document.getElementsByName(cfg.tbl.cof)[0];
+    df.tBodies[0].rows[0].cells[2].firstChild.value = 0.5;
+    df.tBodies[0].rows[1].cells[3].firstChild.value = 0.5;
+    df.tBodies[0].rows[1].cells[5].firstChild.value = 0.5;
+    df.tBodies[0].rows[2].cells[2].firstChild.value = 0.5;
+    df.tBodies[0].rows[2].cells[6].firstChild.value = 0.5;
+    df.tBodies[0].rows[3].cells[3].firstChild.value = 0.5;
+    df.tBodies[0].rows[4].cells[2].firstChild.value = 0.5;
+    df.tBodies[0].rows[4].cells[6].firstChild.value = 0.5;
+    df.tBodies[0].rows[5].cells[3].firstChild.value = 0.5;
+    df.tBodies[0].rows[5].cells[5].firstChild.value = 0.5;
+
+    df = document.getElementsByName(cfg.tbl.init)[0];
+    df.tBodies[0].rows[0].cells[2].firstChild.value = 26.25;
+    df.tBodies[0].rows[1].cells[1].firstChild.value = -26.25;
+    df.tBodies[0].rows[1].cells[5].firstChild.value = 18.75;
+    df.tBodies[0].rows[4].cells[2].firstChild.value = -18.75;
 }
 
 })();
