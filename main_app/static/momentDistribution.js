@@ -272,7 +272,7 @@ var cfg = {
             // Run the method to completion
             let calcs = startIterations(inputs);
             // Show the results
-            showResults(inputs[cfg.tbl.connections], calcs);
+            showResults(inputs, calcs);
         },
     },
 }
@@ -706,9 +706,8 @@ function getInputs() {
     let i = 0;
     // Object that will contain arrays with data from each input table.
     let inputs = {};
-    // All 2D arrays except moments
-    // connections stores true/false values such that connections[x][y]=true
-    // means node x is connected to node y.
+    // All 2D arrays except moments which is 1D.
+    // connections[x][y]: y=0 -> boolean; y=1 -> node that x is connected to.
     let connections = [];
     let df = [];
     let cof = [];
@@ -734,7 +733,7 @@ function getInputs() {
             let checkbox = document.getElementById(
                 `${cfg.htmlId.nodeCheckbox}-${i}-${node}`
             );
-            row[j] = checkbox.checked;
+            row.push([checkbox.checked, node]);
             node += 1;
         }
         // Append row checkbox states
@@ -998,17 +997,17 @@ function startIterations(inputs) {
     return calcs;
 }
 
-function showResults(connections, calcs) {
+function showResults(inputs, calcs) {
     // Organize and display the outputs to the 'output-table' div
 
     // Determine output table width
     // forces is the number of forces (moments) in the structure. This is the
     // number of input checkboxes that have been ticked.
     let forces = 0;
-    for (let row of connections) {
+    for (let row of inputs[cfg.tbl.connections]) {
         for (let box of row) {
             // Increase number of forces if checkbox is ticked.
-            forces += box ? 1 : 0;
+            forces += box[0] ? 1 : 0;
         }
     }
 
@@ -1029,7 +1028,6 @@ function showResults(connections, calcs) {
 
     // Add <span> tags
     let span = document.createElement('span');
-    span.textContent = "Hi."
     let start = {x: 0, y: 0};
     let size = {x: 5, y: cols};
     output.setTag(span, start, size);
@@ -1037,7 +1035,39 @@ function showResults(connections, calcs) {
     // Add labels to header
     // TODO: Set colspan of first row to number of forces at that joint.
     output.getInnerCell(0, 0).textContent = 'Joint';
+    output.getInnerCell(1, 0).textContent = 'Moment';
+    output.getInnerCell(2, 0).textContent = 'DF';
+    output.getInnerCell(3, 0).textContent = 'COF';
+    output.getInnerCell(4, 0).textContent = 'Init M';
+
+    let col = 1;
+    let curNode = 0;
+    // The current force selected in forcesAtNode
+    while (col < cols) {
+        output.getInnerCell(0, col).textContent = cfg.nodeLabelsArray[curNode];
+        for (let connectingNode of inputs[cfg.tbl.connections][curNode]) {
+            // Enter if block only if curNode has a node connected to it
+            if (connectingNode[0]) {
+                output.getInnerCell(1, col)
+                    .textContent = `M${cfg.nodeLabelsArray[curNode]}`
+                        + `${cfg.nodeLabelsArray[connectingNode[1]]}`;
+
+                output.getInnerCell(2, col).textContent = inputs[cfg.tbl.df]
+                    [connectingNode[1]][curNode];
+
+                output.getInnerCell(3, col).textContent = inputs[cfg.tbl.cof]
+                    [curNode][connectingNode[1]];
+
+                output.getInnerCell(4, col).textContent = inputs[cfg.tbl.init]
+                    [connectingNode[1]][curNode];
+                col += 1;
+            }
+        }
+        curNode += 1;
+        col += 1;
+    }
     console.log(output.table);
+    document.body.appendChild(output.table);
 }
 
 function makeEmptyArray(rows, cols) {
