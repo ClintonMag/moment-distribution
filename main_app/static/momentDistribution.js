@@ -105,7 +105,10 @@ var cfg = {
     // Contains names of classes
     cls: {
         nodeLabel: 'node-label',
+        forceLabelBase: 'force-label-base',
+        forceLabel: 'force-label',
         diagonal: 'input-diagonal',
+        nodeSpacer: 'node-spacer',
     },
 
     // All html id values in the html file, hardcoded or generated.
@@ -243,7 +246,9 @@ var cfg = {
             moments.table.tFoot.hidden = true;
 
             // Append the tables to a <div> with id 'input-tables'
-            let inputTablesDiv = document.getElementById('input-tables');
+            let inputTablesDiv = document.getElementById(
+                cfg.htmlId.inputTables
+            );
             inputTablesDiv.appendChild(nodes.table);
             inputTablesDiv.appendChild(df.table);
             inputTablesDiv.appendChild(cof.table);
@@ -267,6 +272,8 @@ var cfg = {
         runMethod: function(event) {
             // Start the moment distribution method
 
+            // Clear previous outputs
+            clearOutputTable();
             // Read inputs
             let inputs = getInputs();
             // Run the method to completion
@@ -445,10 +452,21 @@ class Table {
 function clearInputTables() {
     // Remove all input tables from the #input-tables div
 
-    let inputTables = document.getElementById('input-tables');
+    let inputTables = document.getElementById(cfg.htmlId.inputTables);
     if (inputTables) {
         while (inputTables.firstChild) {
             inputTables.removeChild(inputTables.firstChild);
+        }
+    }
+}
+
+function clearOutputTable() {
+    // Remove the output table to accommodate new inputs
+
+    let outputTable = document.getElementById(cfg.htmlId.outputTable);
+    if (outputTable) {
+        while (outputTable.firstChild) {
+            outputTable.removeChild(outputTable.firstChild);
         }
     }
 }
@@ -1000,6 +1018,15 @@ function startIterations(inputs) {
 function showResults(inputs, calcs) {
     // Organize and display the outputs to the 'output-table' div
 
+    // Keeps index of empty columns that separate nodes in the table
+    let emptyIndices = [];
+
+    // Used to traverse 'output' defined below
+    let col = 0,
+        row = 0,
+        curNode = 0,
+        iteration = 0;
+
     // Determine output table width
     // forces is the number of forces (moments) in the structure. This is the
     // number of input checkboxes that have been ticked.
@@ -1029,28 +1056,63 @@ function showResults(inputs, calcs) {
     // Add <span> tags
     let span = document.createElement('span');
     let start = {x: 0, y: 0};
-    let size = {x: 5, y: cols};
+    let size = {x: rows, y: cols};
     output.setTag(span, start, size);
 
-    // Add labels to header
+    // Add labels to header and last row
     // TODO: Set colspan of first row to number of forces at that joint.
     output.getInnerCell(0, 0).textContent = 'Joint';
     output.getInnerCell(1, 0).textContent = 'Moment';
     output.getInnerCell(2, 0).textContent = 'DF';
     output.getInnerCell(3, 0).textContent = 'COF';
     output.getInnerCell(4, 0).textContent = 'Init M';
+    output.getInnerCell(rows-1, 0).textContent = 'Total';
 
-    let col = 1;
-    let curNode = 0;
-    // The current force selected in forcesAtNode
-    while (col < cols) {
+    col = 1;
+    curNode = 0;
+    // This loop populates the header of the output table
+    while (true) {
+        // First row
+        output.getInnerCell(0, col).classList.add(
+            `${cfg.cls.nodeLabel}-${curNode}-0`
+        );
         output.getInnerCell(0, col).textContent = cfg.nodeLabelsArray[curNode];
+
         for (let connectingNode of inputs[cfg.tbl.connections][curNode]) {
             // Enter if block only if curNode has a node connected to it
             if (connectingNode[0]) {
-                output.getInnerCell(1, col)
-                    .textContent = `M${cfg.nodeLabelsArray[curNode]}`
-                        + `${cfg.nodeLabelsArray[connectingNode[1]]}`;
+                // Add class 'force-label-base' to existing span
+                output.getInnerCell(1, col).classList.add(
+                    cfg.cls.forceLabelBase
+                );
+                // The 'M' will be used for formatting as base to characters
+                // that are subscripted next to it.
+                output.getInnerCell(1, col).textContent = `M`;
+
+                // Additional 2 <span> tags for rows with force labels. These
+                // tags will have the 'force-label' class name for
+                // formatting into a subscript.
+
+                // First span tag, containing alphabetic label of current node.
+                let spanForceLabel = document.createElement('span');
+                spanForceLabel.classList.add(
+                    `${cfg.cls.forceLabel}`,
+                    `${cfg.cls.nodeLabel}-${curNode}-0`
+                )
+                spanForceLabel.textContent = `${cfg.nodeLabelsArray[curNode]}`;
+                output.table.rows[1].cells[col].appendChild(spanForceLabel);
+
+                // Second span tag, containing alphabetic label of node
+                // connected to current node.
+                spanForceLabel = document.createElement('span');
+                spanForceLabel.classList.add(
+                    `${cfg.cls.forceLabel}`,
+                    `${cfg.cls.nodeLabel}-${connectingNode[1]}-0`
+                );
+                spanForceLabel.textContent = `${
+                    cfg.nodeLabelsArray[connectingNode[1]]
+                }`;
+                output.table.rows[1].cells[col].appendChild(spanForceLabel);
 
                 output.getInnerCell(2, col).textContent = inputs[cfg.tbl.df]
                     [connectingNode[1]][curNode];
@@ -1063,28 +1125,100 @@ function showResults(inputs, calcs) {
                 col += 1;
             }
         }
+
+        if (col >= cols) {
+            break;
+        }
         curNode += 1;
+        emptyIndices.push(col);
         col += 1;
     }
-    console.log(output.table);
-    document.body.appendChild(output.table);
-}
 
-function makeEmptyArray(rows, cols) {
-    // Create a zero-filled rows x cols array
+    // This loop adds class 'node-spacer' to columns that contain empty space
+    // to divide the nodes in the ouput table. Will be formatted with CSS.
+    // The class is also added to the empty row that separates the last 'bal'
+    // and the 'Total' row, which is located at rows-2.
+    // (Just practising use of the comma operator, and 'do' loop)
+    row = 0;
+    do {
+        let index = 0;
+        do {
+            output.getInnerCell(row, emptyIndices[index]).classList.add(
+                cfg.cls.nodeSpacer
+            );
+        } while (index++, index < emptyIndices.length);
+    } while (row++, row < rows);
 
-    let tmp = [];
-    let arr = [];
+    col = 0;
+    do {
+        output.getInnerCell(rows-2, col).classList.add(cfg.cls.nodeSpacer);
+    } while (col++, col < cols);
 
-    for (let i = 0; i < rows; i++) {
-        tmp = [];
-        for (let j = 0; j < cols; j++) {
-            tmp.push(0);
+    // This loop fills the remaining cells with the calculated data
+    iteration = 0;
+    row = 5;
+    while (row < rows-2) {
+        col = 0;
+        curNode = 0;
+        // Each row label to alternate between 'Bal' and 'COF'
+        output.getInnerCell(row, col).textContent = 'Balance';
+        output.getInnerCell(row+1, col).textContent = 'COF';
+        col += 1;
+        while (col < cols) {
+            for (let connectingNode of inputs[cfg.tbl.connections][curNode]) {
+                // If there's a node connected to curNode, then we read its
+                // bal and cof value so it can be displayed in the output.
+                if (connectingNode[0]) {
+                    let balCell = output.getInnerCell(row, col);
+                    let cofCell = output.getInnerCell(row+1, col);
+
+                    // This technique is used to represent numbers to 3 decimal
+                    // places with almost accurate rounding. Not always
+                    // accurate due to floating point precision issues.
+                    balCell.textContent = Math.round((calcs[cfg.out.bal]
+                        [iteration][connectingNode[1]][curNode] + 0.00001)
+                        * 1000) / 1000;
+
+                    cofCell.textContent = Math.round((calcs[cfg.out.cof]
+                        [iteration][connectingNode[1]][curNode] + 0.00001)
+                        * 1000) / 1000;
+
+                    col += 1;
+                }
+            }
+            // Skip empty column
+            col += 1;
+
+            curNode += 1;
         }
-        arr.push(tmp);
+
+        iteration += 1;
+        row = 5 + 2*iteration;
     }
 
-    return arr;
+    // Clear second-last row as it was filled with cof values.
+    output.getInnerCell(rows-2, 0).textContent = '';
+    // Populate last row with value of moments at each node.
+    col = 1;
+    curNode = 0;
+    while (col < cols) {
+        for (let connectingNode of inputs[cfg.tbl.connections][curNode]) {
+            if (connectingNode[0]) {
+                output.getInnerCell(rows-2, col).textContent = '';
+
+                output.getInnerCell(rows-1, col)
+                .textContent = Math.round((calcs[cfg.out.tot]
+                    [calcs[cfg.out.iter]-1][connectingNode[1]][curNode]
+                    + 0.0001) * 1000) / 1000;
+
+                col += 1;
+            }
+        }
+        col += 1;
+        curNode += 1;
+    }
+
+    document.getElementById(cfg.htmlId.outputTable).appendChild(output.table);
 }
 
 function sumOfColumns(my2DArray) {
