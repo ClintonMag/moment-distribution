@@ -44,10 +44,8 @@ the applied forces specified.
 
 */
 
-// TODO: Add minimum and maximum values to input boxes and enforce them.
-// Correctly round of floats to a specific decimal.
-// Using CSS if possible, highlight currently select row and column label in
-// the input cells.
+// TODO: Using CSS if possible, highlight currently select row and column label
+// in the input cells.
 
 var momentDist = (function () {
 
@@ -60,7 +58,7 @@ const constant = {
     NODES_MIN: 3,
     NODES_MAX: 20,
     NUM_NODES_DEFAULT: 5,
-    TEXT_MAXLENGTH: 1,
+    TEXT_MAXLENGTH: 3,
     MIN_ITERATIONS: 1,
     MAX_ITERATIONS: 50,
     MIN_ERROR: 0.001,
@@ -280,7 +278,7 @@ var cfg = {
             inputTablesDiv.appendChild(span);
 
             // Fill in some test values
-            testCase();
+            // testCase();
         },
 
         runMethod: function(event) {
@@ -860,9 +858,60 @@ function checkInputs(inputs) {
     // Clear previous error message
     document.getElementById(cfg.htmlId.inputError).textContent = '';
 
+    // Check if every node has at least one connection to another
+    for (let row in inputs[cfg.tbl.connections]) {
+        let emptyRow = true;
+        for (let cell in inputs[cfg.tbl.connections][row]) {
+            if (inputs[cfg.tbl.connections][row][cell][0]) {
+                emptyRow = false;
+            }
+        }
+        // If entire row has no true value, it means the current node has no
+        // connection to the other.
+        if (emptyRow) {
+            // This creates 3 spans with varying textContent. The span with the
+            // node label that isn't connected to any other has the
+            // 'node-label' class so it's content can change if labels change.
+            let nodeLabel = document.createElement('span');
+            nodeLabel.classList.add(`${cfg.cls.nodeLabel}-${row}-0`);
+            nodeLabel.textContent = cfg.nodeLabelsArray[row];
+
+            let span = document.createElement('span');
+            span.textContent = 'Joint ';
+            document.getElementById(cfg.htmlId.inputError).appendChild(span);
+            document.getElementById(cfg.htmlId.inputError).appendChild(
+                nodeLabel
+            );
+            span = span.cloneNode(false);
+            span.textContent = ' is not connected to any other node. ' +
+                'Tick appropriate checkbox.';
+            document.getElementById(cfg.htmlId.inputError).appendChild(span);
+
+            return false;
+        }
+    }
+
     // Check distribution factors
-    let errMsg = 'A value in the tables is not a valid number.';
+    let tableName = '';
     for (let arr in inputs) {
+        switch (arr) {
+            case cfg.tbl.df:
+                tableName = 'the Distribution Factor table';
+                break;
+            case cfg.tbl.cof:
+                tableName = 'the Carry-over Factor table';
+                break;
+            case cfg.tbl.init:
+                tableName = 'the initial Moments table';
+                break;
+            case cfg.tbl.moments:
+                tableName = 'the Applied Moments table';
+                break;
+            default:
+                tableName = 'the input tables';
+        }
+
+        let errMsg = `A value in ${tableName} is not a valid number.`;
         if (arr === cfg.tbl.connections){
             continue;
         }
@@ -1140,6 +1189,7 @@ function showResults(inputs, calcs) {
     // the final calculated moments at each node.
     let rows = 5 + calcs[cfg.out.iter]*2 - 1 + 2;
     let output = new Table(cfg.tbl.outputs, rows, cols);
+    output.SetCaption('Moment Distribution Calculation Results');
 
     // Add <span> tags
     let span = document.createElement('span');
@@ -1148,7 +1198,6 @@ function showResults(inputs, calcs) {
     output.setTag(span, start, size);
 
     // Add labels to header and last row
-    // TODO: Set colspan of first row to number of forces at that joint.
     output.getInnerCell(0, 0).textContent = 'Joint';
     output.getInnerCell(1, 0).textContent = 'Moment';
     output.getInnerCell(2, 0).textContent = 'DF';
@@ -1167,7 +1216,7 @@ function showResults(inputs, calcs) {
         output.getInnerCell(0, col).textContent = cfg.nodeLabelsArray[curNode];
 
         for (let connectingNode of inputs[cfg.tbl.connections][curNode]) {
-            // Enter if block only if curNode has a node connected to it
+            // Enter only if curNode has a node connected to it
             if (connectingNode[0]) {
                 // Add class 'force-label-base' to existing span
                 output.getInnerCell(1, col).classList.add(
@@ -1214,13 +1263,55 @@ function showResults(inputs, calcs) {
             }
         }
 
-        if (col >= cols) {
-            break;
-        }
         curNode += 1;
         emptyIndices.push(col);
         col += 1;
+        if (col >= cols) {
+            break;
+        }
     }
+
+    // For first row of table containing labels of each node:
+    // Set colspan of first cell at node to number of forces at that node.
+    // Hide the cells whose space is taken up by the enlarged cell.
+    col = 1;
+    let nodeForces = 0;
+    // startCol is column index in the table of the first force of all
+    // forces at the current node.
+    let startCol = 1;
+    for (let index of emptyIndices) {
+        if (emptyIndices.indexOf(index) === 0) {
+            startCol = 1;
+            nodeForces = index - 1;
+            output.table.rows[0].cells[1].setAttribute('colspan', nodeForces);
+            col = startCol+1;
+            // nodeForces-1 is the number of columns to hide after the current
+            // column.
+            while (col < startCol+nodeForces) {
+                output.table.rows[0].cells[col].hidden = true;
+                col += 1;
+            }
+            continue;
+        }
+
+        if (emptyIndices.indexOf(index) === 1) {
+            nodeForces = index - emptyIndices[0] - 1;
+        } else {
+            nodeForces = index - emptyIndices[emptyIndices.indexOf(index)-1]-1;
+        }
+        startCol = emptyIndices[emptyIndices.indexOf(index)-1] + 1;
+        output.table.rows[0].cells[startCol].setAttribute(
+            'colspan', nodeForces
+        );
+        col = startCol + 1;
+        while (col < startCol+nodeForces) {
+            output.table.rows[0].cells[col].hidden = true;
+            col += 1;
+        }
+    }
+
+    // Pop last column of emptyIndices as its value is out of table width
+    emptyIndices.pop();
 
     // This loop adds class 'node-spacer' to columns that contain empty space
     // to divide the nodes in the ouput table. Will be formatted with CSS.
