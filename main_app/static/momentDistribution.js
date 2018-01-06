@@ -81,6 +81,9 @@ var cfg = {
     // Contains minimum error stopping condition for the method
     minError: constant.MIN_ERROR,
 
+    // Keeps track of number of bad inputs in the input tables
+    badInputs: 0,
+
     // Contains names of input tables
     tbl: {
         nodes: 'nodes',
@@ -109,6 +112,7 @@ var cfg = {
         forceLabel: 'force-label',
         diagonal: 'input-diagonal',
         nodeSpacer: 'node-spacer',
+        inputError: 'input-error',
     },
 
     // All html id values in the html file, hardcoded or generated.
@@ -121,6 +125,8 @@ var cfg = {
         outputTable: 'output-table',
         nodeCheckbox: 'node-checkbox',
         makeTables: 'make-tables',
+        runCalculations: 'run-calcs',
+        inputError: 'input-error',
     },
 
     // All event handlers
@@ -259,11 +265,19 @@ var cfg = {
             // data has been entered into the tables.
 
             let runButton = document.createElement('button');
+            runButton.id = cfg.htmlId.runCalculations;
             runButton.type = 'button';
-            runButton.textContent = "Run Calcs";
+            runButton.textContent = "Run Calculations";
             runButton.addEventListener('click', cfg.handlers.runMethod, false);
             // Button is part of the tables, append to inputTablesDiv
             inputTablesDiv.appendChild(runButton);
+
+            // Add <span> next to the button to receive error messages about
+            // inputs typed in the input tables.
+            let span = document.createElement('span');
+            span.id = cfg.htmlId.inputError;
+            span.classList.add(cfg.cls.inputError);
+            inputTablesDiv.appendChild(span);
 
             // Fill in some test values
             testCase();
@@ -272,10 +286,14 @@ var cfg = {
         runMethod: function(event) {
             // Start the moment distribution method
 
-            // Clear previous outputs
-            clearOutputTable();
             // Read inputs
             let inputs = getInputs();
+            // Check if inputs are valid
+            if (!checkInputs(inputs)) {
+                return;
+            }
+            // Clear previous outputs if inputs are valid
+            clearOutputTable();
             // Run the method to completion
             let calcs = startIterations(inputs);
             // Show the results
@@ -611,9 +629,14 @@ function makeContentTable(name, numberOfNodes, inputTag=true) {
     let tbl = new Table(name, numberOfNodes+2, numberOfNodes+1);
 
     // Add <input> tags if inputTag, else add <span> tags
-    let tagType = inputTag ? 'input' : 'span';
-    let dataCell = document.createElement(tagType);
-    dataCell.type = inputTag ? 'number' : null;
+    let dataCell;
+    if (inputTag) {
+        dataCell = document.createElement('input');
+        dataCell.type = 'number';
+        dataCell.setAttribute('step', '0.001');
+    } else {
+        dataCell = document.createElement('span');
+    }
     let start = {x: 1, y: 1};
     let size = {x: numberOfNodes, y: numberOfNodes};
     tbl.setTag(dataCell, start, size);
@@ -677,6 +700,7 @@ function makeMomentsTable(name, numberOfNodes) {
     // Add input tags to table
     let inputNumber = document.createElement('input');
     inputNumber.type = 'number';
+    inputNumber.setAttribute('step', '0.001');
     let start = {x: 1, y: 1};
     let size = {x: numberOfNodes, y: 1};
     moments.setTag(inputNumber, start, size);
@@ -780,9 +804,26 @@ function getInputs() {
     let initRow = [];
     // There are numberOfNodes^2 input blocks per df, cof, or init table.
     for (i = 0; i < cfg.numberOfNodes**2; i++) {
-        dfRow.push(Number(dfInputs[i].value));
-        cofRow.push(Number(cofInputs[i].value));
-        initRow.push(Number(initInputs[i].value));
+        // If a non-numeric value is detected, store 'Bad input' for detection
+        // bad the checkInputs function later.
+        dfRow.push(
+            dfInputs[i].validity.badInput
+            ? 'Bad Input'
+            : Number(dfInputs[i].value)
+        );
+
+        cofRow.push(
+            cofInputs[i].validity.badInput
+            ? 'Bad Input'
+            : Number(cofInputs[i].value)
+        );
+
+        initRow.push(
+            initInputs[i].validity.badInput
+            ? 'Bad Input'
+            : Number(initInputs[i].value)
+        );
+
         // Push row to main array once entire row has been accessed
         if ((i % cfg.numberOfNodes) == (cfg.numberOfNodes - 1)) {
             df.push(dfRow);
@@ -796,7 +837,11 @@ function getInputs() {
 
     // Read input from the moments table
     for (i = 0; i < cfg.numberOfNodes; i++) {
-        moments.push(Number(momentsInputs[i].value));
+        moments.push(
+            momentsInputs[i].validity.badInput
+            ? 'Bad Input'
+            : Number(momentsInputs[i].value)
+        );
     }
 
     // Add the arrays to the main object so it can be returned
@@ -807,6 +852,49 @@ function getInputs() {
     inputs[cfg.tbl.moments] = moments;
 
     return inputs;
+}
+
+function checkInputs(inputs) {
+    // Check inputs typed in tables for validity
+
+    // Clear previous error message
+    document.getElementById(cfg.htmlId.inputError).textContent = '';
+
+    // Check distribution factors
+    let errMsg = 'A value in the tables is not a valid number.';
+    for (let arr in inputs) {
+        if (arr === cfg.tbl.connections){
+            continue;
+        }
+        if (arr === cfg.tbl.moments) {
+            for (let cell in inputs[arr]) {
+                if (Number(inputs[arr][cell]) !== 0
+                    && !Number(inputs[arr][cell]))
+                {
+                    // Send error message to #input-error <span> tag
+                    document.getElementById(cfg.htmlId.inputError)
+                    .textContent = errMsg;
+
+                    return false;
+                }
+            }
+            continue;
+        }
+        for (let row in inputs[arr]) {
+            for (let cell in inputs[arr][row]) {
+                if (Number(inputs[arr][row][cell]) !== 0
+                    && !Number(inputs[arr][row][cell]))
+                {
+                    // Send error message to #input-error <span> tag
+                    document.getElementById(cfg.htmlId.inputError)
+                    .textContent = errMsg;
+
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
 }
 
 function startIterations(inputs) {
