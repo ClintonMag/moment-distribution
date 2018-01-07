@@ -62,6 +62,7 @@ const constant = {
     MIN_ITERATIONS: 1,
     MAX_ITERATIONS: 50,
     MIN_ERROR: 0.001,
+    STEP: 0.00001,
 };
 
 // Contains variable names and values used in various places in the code
@@ -232,6 +233,8 @@ var cfg = {
             // Create distribution factor table
             let df = makeContentTable(cfg.tbl.df, cfg.numberOfNodes);
             df.SetCaption('Distribution Factor');
+            // Hide footer, not needed (for now).
+            df.table.tFoot.hidden = true;
 
             // Create carry-over factor table
             let cof = makeContentTable(cfg.tbl.cof, cfg.numberOfNodes);
@@ -242,6 +245,8 @@ var cfg = {
             // Create initial moments table
             let init = makeContentTable(cfg.tbl.init, cfg.numberOfNodes);
             init.SetCaption('Initial Moments');
+            // Hide footer, not needed (for now).
+            init.table.tFoot.hidden = true;
 
             // Create applied moments table
             let moments = makeMomentsTable(cfg.tbl.moments, cfg.numberOfNodes);
@@ -631,7 +636,7 @@ function makeContentTable(name, numberOfNodes, inputTag=true) {
     if (inputTag) {
         dataCell = document.createElement('input');
         dataCell.type = 'number';
-        dataCell.setAttribute('step', '0.001');
+        dataCell.setAttribute('step', constant.STEP);
     } else {
         dataCell = document.createElement('span');
     }
@@ -698,7 +703,7 @@ function makeMomentsTable(name, numberOfNodes) {
     // Add input tags to table
     let inputNumber = document.createElement('input');
     inputNumber.type = 'number';
-    inputNumber.setAttribute('step', '0.001');
+    inputNumber.setAttribute('step', constant.STEP);
     let start = {x: 1, y: 1};
     let size = {x: numberOfNodes, y: 1};
     moments.setTag(inputNumber, start, size);
@@ -742,6 +747,18 @@ function makeMomentsTable(name, numberOfNodes) {
 function getInputs() {
     // Read the data entered into the input tables.
     // Return an object with arrays containing the data in each table.
+
+    cfg.numberOfNodes = Number(
+        document.getElementById('number-of-nodes').value
+    );
+
+    cfg.maxIterations = Number(
+        document.getElementById(cfg.htmlId.maxIterations).value
+    )
+
+    cfg.minError = Number(
+        document.getElementById(cfg.htmlId.minError).value
+    )
 
     let i = 0;
     // Object that will contain arrays with data from each input table.
