@@ -840,7 +840,7 @@ function getInputs() {
         );
 
         // Push row to main array once entire row has been accessed
-        if ((i % cfg.numberOfNodes) == (cfg.numberOfNodes - 1)) {
+        if ((i % cfg.numberOfNodes) === (cfg.numberOfNodes - 1)) {
             df.push(dfRow);
             cof.push(cofRow);
             init.push(initRow);
