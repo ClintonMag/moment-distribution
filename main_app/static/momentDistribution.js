@@ -55,7 +55,7 @@ var momentDist = (function () {
 
 // Some constants
 const constant = {
-    NODES_MIN: 3,
+    NODES_MIN: 2,
     NODES_MAX: 20,
     NUM_NODES_DEFAULT: 5,
     TEXT_MAXLENGTH: 3,

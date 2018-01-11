@@ -1,6 +1,20 @@
+html {
+    font-size: 10px;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
     color: #aaa;
     background: #222;
+    font-size: 2rem;
+}
+
+ul.tabs {
+    padding: 0;
 }
 
 th, td {
