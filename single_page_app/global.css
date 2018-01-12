@@ -3,7 +3,7 @@
 html {
     font-size: 10px;
     font-family: Helvetica, Arial, sans-serif;
-    background-color: hsl(0, 0%, 10%);
+    background-color: hsl(0, 0%, 5%);
     color: hsl(0, 0%, 60%);
 }
 
@@ -22,6 +22,20 @@ table {
 
 button {
     font-size: inherit;
+    margin-bottom: 0;
+}
+
+a {
+    text-decoration: none;
+}
+
+input {
+    padding: 0.2rem 0.3rem 0.2rem;
+    margin: 0.2rem 0.3rem 0.2rem;
+    border: 1px solid hsl(270, 50%, 50%);
+    color: hsl(0, 0%, 60%);
+    background-color: hsl(0, 0%, 15%);
+    border-radius: 0.3rem;
 }
 
 input[type="number"] {
@@ -31,30 +45,85 @@ input[type="number"] {
 input[type="number"], input[type="text"] {
     font-size: 2rem;
     padding: 0 0.3rem;
-    background-color: hsl(0, 0%, 30%);
-    border: none;
 }
 
+td, th {
+    border: 2px solid black;
+}
 
 /* None app-wide rules */
 
+section.content {
+    position: absolute;
+    top: 3rem;
+    left: 15%;
+    min-width: 70%;
+    height: 100%;
+    padding: 0 2rem;
+}
+
+/* Tab tag rules*/
+
 ul.tabs {
+    width: 100%;
     padding: 0;
+    margin: 0;
     list-style: none;
 }
 
-/* Rules for children of the <section> element */
+section.content .tabs li {
+    /* Three tabs occupying 33.3% of container width each */
+    width: 33.33%;
+    text-align: center;
+    float: left;
+    border: 1px solid hsl(270, 50%, 40%);
+    border-radius: 0 2rem 0 0;
+    background-color: hsl(270, 50%, 50%);
+}
+
+section.content .tabs li a {
+    display: inline-block;
+    color: black;
+    line-height: 3;
+    width: 100%;
+}
+
+/* Rules for panels */
+
+/* Float clearing div */
+section.content div.clear {
+    clear: both;
+    margin: 0;
+    padding: 0;
+}
 
 section.content div {
-    width: 50%;
-    min-width: 64rem;
-    margin: 5rem auto;
+    padding: 3rem 2rem;
+    /* This margin enables bottom border of section to be seen */
+    margin-bottom: 2rem;
+    border: 1px solid hsl(270, 100%, 30%);
+    border-top: none;
+    background-color: hsl(0, 0%, 8%);
 }
 
 
 /* Rules for starting input boxes */
+
+/* Headers and row labels */
+#input-tables thead th,
+#input-tables tbody td:first-child {
+    color: hsl(0, 0%, 0%);
+    background-color: hsl(270, 50%, 35%);
+}
+
+#input-tables td {
+    /*color: hsl(0, 0%, 0%);*/
+    background-color: hsl(270, 50%, 20%);
+}
+
 #input-nodes input {
-    width: 5rem;
+    width: 6rem;
+    /* This margin spaces out the input boxes */
     margin: 2rem 0 4rem;
 }
 
@@ -63,14 +132,15 @@ section.content div {
 }
 
 #input-nodes button {
-    margin: 2rem 0;
+    margin-top: 2rem;
 }
 
-td, th {
-    border: 2px solid black;
-}
 
 /* Nodes input table rules*/
+
+#input-tables table {
+    margin-bottom: 2rem;
+}
 
 #input-tables table[name="nodes"] th,
 #input-tables table[name="moments"] th {
@@ -104,7 +174,6 @@ table[name="nodes"] td:first-child {
 table[name="nodes"] td:nth-child(n+3) {
     width: 8rem;
 }
-
 
 /* DF, COF and Init table rules */
 

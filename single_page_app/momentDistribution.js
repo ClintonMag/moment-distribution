@@ -229,7 +229,7 @@ var cfg = {
 
             // Create node table where labels for each node will be typed
             let nodes = makeNodeTable(cfg.numberOfNodes);
-            nodes.SetCaption('Joint  Names');
+            nodes.SetCaption('Joint Names');
             // Create distribution factor table
             let df = makeContentTable(cfg.tbl.df, cfg.numberOfNodes);
             df.SetCaption('Distribution Factor');
