@@ -3,6 +3,8 @@
 html {
     font-size: 10px;
     font-family: Helvetica, Arial, sans-serif;
+    background-color: hsl(0, 0%, 10%);
+    color: hsl(0, 0%, 60%);
 }
 
 * {
@@ -10,34 +12,115 @@ html {
 }
 
 body {
-    color: #aaa;
-    background: #222;
     font-size: 2rem;
+    line-height: 1.6;
 }
 
 table {
     border-collapse: collapse;
 }
 
+button {
+    font-size: inherit;
+}
+
+input[type="number"] {
+    width: 15rem;
+}
+
+input[type="number"], input[type="text"] {
+    font-size: 2rem;
+    padding: 0 0.3rem;
+    background-color: hsl(0, 0%, 30%);
+    border: none;
+}
+
+
+/* None app-wide rules */
+
 ul.tabs {
     padding: 0;
     list-style: none;
 }
 
-th, td {
-    color: inherit;
-    border: 2px solid;
-    border-color: black;
-    background: #333;
+/* Rules for children of the <section> element */
+
+section.content div {
+    width: 50%;
+    min-width: 64rem;
+    margin: 5rem auto;
 }
 
-.input-diagonal {
-    background: #444;
+
+/* Rules for starting input boxes */
+#input-nodes input {
+    width: 5rem;
+    margin: 2rem 0 4rem;
+}
+
+#input-nodes #error {
+    width: 8rem;
+}
+
+#input-nodes button {
+    margin: 2rem 0;
+}
+
+td, th {
+    border: 2px solid black;
+}
+
+/* Nodes input table rules*/
+
+#input-tables table[name="nodes"] th,
+#input-tables table[name="moments"] th {
+    font-style: normal;
+    text-transform: capitalize;
+    width: 5rem;
+    padding: 1rem 1rem;
+}
+
+/* Centers input boxes in 'Joint Names' table */
+table[name="nodes"] td:nth-child(2) {
+    text-align: center;
+}
+
+table[name="nodes"] td:nth-child(2) input {
+    width: 50%;
+}
+
+/* Places the 'Node Connection' label at center of checkboxes */
+table[name="nodes"] th:nth-child(3) {
+    text-align: left;
+    text-indent: 3rem;
+}
+
+table[name="nodes"] td:first-child {
+    text-align: right;
+    font-style: italic;
+    padding: 0 2rem;
+}
+
+table[name="nodes"] td:nth-child(n+3) {
+    width: 8rem;
+}
+
+
+/* DF, COF and Init table rules */
+
+table tbody tr td input.input-diagonal {
+    background-color: hsl(0, 0%, 5%);
     border-color: black;
 }
 
-input {
-    color: inherit;
-    background: black;
-    border-color: black;
+#input-tables th:first-child {
+    text-transform: uppercase;
+    font-style: italic;
+    padding: 0 3.2rem;
+}
+
+#input-tables td:first-child {
+    text-align: center;
+    font-style: italic;
+    padding: 0 2rem;
 }
