@@ -919,7 +919,7 @@ function checkInputs(inputs) {
                 tableName = 'the Carry-over Factor table';
                 break;
             case cfg.tbl.init:
-                tableName = 'the initial Moments table';
+                tableName = 'the Initial Moments table';
                 break;
             case cfg.tbl.moments:
                 tableName = 'the Applied Moments table';
