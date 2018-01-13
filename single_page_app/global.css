@@ -3,7 +3,7 @@
 html {
     font-size: 10px;
     font-family: Helvetica, Arial, sans-serif;
-    background-color: hsl(0, 0%, 5%);
+    background-color: hsl(0, 0%, 10%);
     color: hsl(0, 0%, 60%);
 }
 
@@ -86,6 +86,48 @@ tr:last-child td:last-child {
 button {
     font-size: inherit;
     margin-bottom: 0;
+    padding: 1rem;
+    color: turquoise;
+    text-shadow: 0 0 0.1rem turquoise;
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 1rem black,
+                inset 0.2rem 0.2rem 0.2rem grey,
+                inset -0.2rem -0.2rem 0.2rem black;
+    background-color: hsl(0, 0%, 20%);
+    background-image: linear-gradient(
+        to bottom right,
+        hsla(0, 0%, 70%, 0.5),
+        hsla(0, 0%, 10%, 0.5)
+    );
+}
+
+button:disabled {
+    color: hsl(0, 0%, 20%);
+    text-shadow: none;
+    box-shadow: none;
+    background-color: hsl(0, 0%, 10%);
+    background-image: linear-gradient(
+        to bottom right,
+        hsla(0, 0%, 20%, 0.9),
+        hsla(0, 0%, 5%, 0.9)
+    );
+
+}
+
+/* Box Text shadows simulate button movement on press */
+button:active {
+    color: rgba(0,0,0,0);
+    text-shadow: 0.2rem 0.2rem 0rem darkturquoise;
+    box-shadow: 0 0 1rem black,
+                inset 0.2rem 0.2rem 0.2rem black,
+                inset -0.2rem -0.2rem 0.2rem grey;
+    background-image: linear-gradient(
+        to top left,
+        hsla(0, 0%, 70%, 0.5),
+        hsla(0, 0%, 10%, 0.5)
+    );
+
 }
 
 a {
@@ -113,10 +155,10 @@ input[type="number"], input[type="text"] {
 
 /* None app-wide rules */
 
-section.content {
+div.content {
     position: absolute;
     top: 3rem;
-    min-width: 70%;
+    min-width: 100%;
     height: 100%;
     padding: 0 2rem;
 }
@@ -124,53 +166,101 @@ section.content {
 /* Tab tag rules*/
 
 ul.tabs {
-    width: 100%;
+    width: 60rem;
     padding: 0;
     margin: 0;
     list-style: none;
 }
 
-section.content .tabs li {
+div.content .tabs li {
     /* Three tabs occupying 33.3% of container width each */
     width: 33.33%;
-    text-align: center;
     float: left;
-    border: 1px solid hsl(270, 50%, 40%);
+    text-align: center;
+    color: darkturquoise;
+    text-shadow: 0 0 1rem black;
+    border: 0.1rem solid hsl(270, 100%, 30%);
     border-radius: 0 2rem 0 0;
     background-color: hsl(270, 50%, 50%);
 }
 
-section.content .tabs li a {
+div.content .tabs li a {
+    color: inherit;
     display: inline-block;
-    color: darkturquoise;
-    text-shadow: 0 0 1rem black;
     line-height: 3;
     width: 100%;
 }
 
+div.content .tabs a:focus {
+    border-radius: 0 2rem 0 0;
+}
+
+div.content .tabs li:hover {
+    color: turquoise;
+    background-color: hsl(270, 100%, 50%);
+}
+
+div.content .tabs li a:active {
+    color: black;
+    background-color: cyan;
+}
+
+div.content .tabs a.active {
+    box-shadow: 0 0 1rem darkorange;
+    border-radius: 0 2rem 0 0;
+    color: hsl(270, 100%, 20%);
+    background-color: darkorange;
+}
+
+
 /* Rules for panels */
 
-/* Float clearing div */
-section.content div.clear {
+/* Float clearing span */
+div.content span.clear {
+    display: block;
     clear: both;
     margin: 0;
     padding: 0;
+    border: none;
 }
 
-section.content div {
+div.content div.panels {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+div.content .panels div {
+    /* These divs are hidden by default. Made visible through CSS rule by
+    acquiring class name .active-panel. */
+    position: absolute;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+    visibility: hidden;
     padding: 3rem 2rem;
-    /* This margin enables bottom border of section to be seen */
+    /* This margin enables bottom border of div to be seen */
     margin-bottom: 2rem;
     border: 0.1rem solid hsl(270, 100%, 30%);
-    border-top: none;
-    border-radius: 0 0 2rem 2rem;
+    /*border-top: none;*/
+    border-radius: 0 2rem 2rem 2rem;
     background-color: hsl(0, 0%, 8%);
+    box-shadow: none;
 }
 
+div.content div.active-panel {
+    visibility: visible;
+    box-shadow: 0 0 1rem black;
+}
 
 /* Rules for starting input boxes */
 
 /* Adds border radius to top-right corner <th> elemnt */
+#input-nodes {
+    text-align: center;
+}
+
 #input-nodes thead th:nth-child(3) {
     border: 1px solid transparent;
     border-radius: 0 0.5rem 0 0;
@@ -192,6 +282,10 @@ section.content div {
 
 
 /* Nodes input table rules*/
+
+#input-tables {
+    text-align: center;
+}
 
 #input-tables table {
     margin-bottom: 2rem;
@@ -297,10 +391,15 @@ table tbody tr td input.input-diagonal {
 }
 
 #input-error {
+    position: absolute;
+    bottom: 1rem;
+    left: 0;
+    width: 24%;
+    text-align: left;
     margin-left: 1rem;
     padding: 0.5rem 1rem;
-    border: 0.1rem solid hsl(270, 100%, 30%);
-    border-radius: 0.5rem;
+    border: 0.1rem solid hsl(0, 100%, 30%);
+    border-radius: 1rem;
     background-color: hsl(0, 0%, 5%);
 }
 

@@ -282,6 +282,10 @@ var cfg = {
             span.classList.add(cfg.cls.inputError);
             inputTablesDiv.appendChild(span);
 
+            // Switch to input tables tab
+            document.querySelectorAll('.tabs li a')[1].click();
+
+
             // Fill in some test values
             // testCase();
         },
@@ -301,6 +305,8 @@ var cfg = {
             let calcs = startIterations(inputs);
             // Show the results
             showResults(inputs, calcs);
+            // Switch to tab with the results
+            document.querySelectorAll('.tabs li a')[2].click();
         },
     },
 }
@@ -326,6 +332,29 @@ document.getElementById(cfg.htmlId.makeTables).addEventListener(
     'click', cfg.handlers.makeInputTables, false
 );
 
+// Add 'click' event listener to tabs
+var tabs = document.querySelectorAll('.content .tabs li a');
+var panels = document.querySelectorAll('.content .panels div');
+for(let i = 0; i < tabs.length; i++) {
+    var tab = tabs[i];
+    setTabHandler(tab, i);
+}
+
+function setTabHandler(tab, tabPos) {
+    tab.onclick = function() {
+        for(let i = 0; i < tabs.length; i++) {
+            tabs[i].className = '';
+        }
+
+        tab.className = 'active';
+
+        for(let i = 0; i < panels.length; i++) {
+            panels[i].className = '';
+        }
+
+        panels[tabPos].className = 'active-panel';
+    }
+}
 
 class Table {
     constructor(name, rows, cols) {
