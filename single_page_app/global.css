@@ -52,7 +52,7 @@ tr td:first-child, tr th:first-child {
 tr td:last-child,
 tr th:last-child,
 table[name="nodes"] th:nth-child(3) {
-    border: 1px solid teal;
+    border: 0.1rem solid teal;
     border-top: none;
     border-bottom: none;
     border-left: none;
@@ -66,7 +66,7 @@ tr:last-child td {
 }
 
 tr:last-child td:first-child {
-    border: 1px solid teal;
+    border: 0.1rem solid teal;
     border-right: none;
     border-top: none;
     border-left: 0.1rem solid teal;
@@ -75,7 +75,7 @@ tr:last-child td:first-child {
 }
 
 tr:last-child td:last-child {
-    border: 1px solid teal;
+    border: 0.1rem solid teal;
     border-left: none;
     border-top: none;
     border-right: 0.1rem solid teal;
@@ -94,11 +94,11 @@ button {
     box-shadow: 0 0 1rem black,
                 inset 0.2rem 0.2rem 0.2rem grey,
                 inset -0.2rem -0.2rem 0.2rem black;
-    background-color: hsl(0, 0%, 20%);
+    background-color: hsl(270, 100%, 50%);
     background-image: linear-gradient(
         to bottom right,
-        hsla(0, 0%, 70%, 0.5),
-        hsla(0, 0%, 10%, 0.5)
+        hsla(0, 0%, 50%, 0.2),
+        hsla(0, 0%, 5%, 0.7)
     );
 }
 
@@ -123,9 +123,9 @@ button:active {
                 inset 0.2rem 0.2rem 0.2rem black,
                 inset -0.2rem -0.2rem 0.2rem grey;
     background-image: linear-gradient(
-        to top left,
-        hsla(0, 0%, 70%, 0.5),
-        hsla(0, 0%, 10%, 0.5)
+        to top-left,
+        hsla(0, 0%, 50%, 0.2),
+        hsla(0, 0%, 5%, 0.7)
     );
 
 }
@@ -137,7 +137,7 @@ a {
 input {
     padding: 0.2rem 0.3rem 0.2rem;
     margin: 0.2rem 0.3rem 0.2rem;
-    border: 1px solid hsl(270, 50%, 50%);
+    border: 0.1rem solid hsl(270, 50%, 50%);
     color: hsl(0, 0%, 60%);
     background-color: hsl(0, 0%, 15%);
     border-radius: 0.5rem;
@@ -262,7 +262,7 @@ div.content div.active-panel {
 }
 
 #input-nodes thead th:nth-child(3) {
-    border: 1px solid transparent;
+    border: 0.1rem solid transparent;
     border-radius: 0 0.5rem 0 0;
 }
 
@@ -351,7 +351,7 @@ table tbody tr td input.input-diagonal {
     padding: 0.5rem 1rem;
 }
 
-#output-table tr:nth-child(4) td {
+#output-table tr:nth-child(3) td {
     border-bottom: 0.3rem solid teal;
 }
 
@@ -366,6 +366,12 @@ table tbody tr td input.input-diagonal {
 #output-table tbody tr:last-child td {
     border-radius: 0;
 }
+
+#output-table .node-spacer {
+    background-color: hsl(270, 100%, 10%);
+    padding: 0.5rem;
+}
+
 
 #output-table span[class~="force-label-base"] {
     color:  turquoise;

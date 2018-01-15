@@ -47,7 +47,7 @@ the applied forces specified.
 // TODO: Using CSS if possible, highlight currently select row and column label
 // in the input cells.
 
-var momentDist = (function () {
+(function () {
 
 'use strict';
 
@@ -1368,7 +1368,7 @@ function showResults(inputs, calcs) {
     do {
         let index = 0;
         do {
-            output.getInnerCell(row, emptyIndices[index]).classList.add(
+            output.table.rows[row].cells[emptyIndices[index]].classList.add(
                 cfg.cls.nodeSpacer
             );
         } while (index++, index < emptyIndices.length);
@@ -1376,7 +1376,7 @@ function showResults(inputs, calcs) {
 
     col = 0;
     do {
-        output.getInnerCell(rows-2, col).classList.add(cfg.cls.nodeSpacer);
+        output.table.rows[row-2].cells[col].classList.add(cfg.cls.nodeSpacer);
     } while (col++, col < cols);
 
     // This loop fills the remaining cells with the calculated data
