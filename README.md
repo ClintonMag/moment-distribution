@@ -3,7 +3,7 @@
 ### Single-page web application to assist students with Moment Distribution calculations.
 
 
-###Installation
+### Installation
 
 - Download the repository as a zipped file using the 'clone or download' button on this page.
 - Extract to any folder on your computer.
