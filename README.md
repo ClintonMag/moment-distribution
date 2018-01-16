@@ -3,11 +3,11 @@
 ### Single-page web application to assist students with Moment Distribution calculations.
 
 
-## Installation
+###Installation
 
--Download 'single_page_app' folder to any folder on your computer.
-
--Open 'index.html' in a browser of your choice by double-clicking on it.
+- Download the repository as a zipped file using the 'clone or download' button on this page.
+- Extract to any folder on your computer.
+- Go into the 'single_page_app' folder and open 'index.html' in a browser of your choice by double-clicking on it.
 
 Note that this hasn't been extensively tested in many browsers and browser versions, but it should work in (almost) any browser (I hope).
 Maybe keep away from Internet Explorer versions < 9;
