@@ -1,6 +1,6 @@
 # Moment Distribution Calculator
 
-### Single-page web application to assist Civil Engineering students with Moment Distribution calculations.
+### Single-page web application to assist students with Moment Distribution calculations.
 
 
 ## Installation
