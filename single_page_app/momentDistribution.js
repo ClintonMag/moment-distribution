@@ -221,11 +221,11 @@ var cfg = {
 
             cfg.maxIterations = Number(
                 document.getElementById(cfg.htmlId.maxIterations).value
-            )
+            );
 
             cfg.minError = Number(
                 document.getElementById(cfg.htmlId.minError).value
-            )
+            );
 
             // Create node table where labels for each node will be typed
             let nodes = makeNodeTable(cfg.numberOfNodes);
@@ -309,7 +309,7 @@ var cfg = {
             document.querySelectorAll('.tabs li a')[2].click();
         },
     },
-}
+};
 
 
 // Some setup code that accesses the DOM; must run upon script load.
@@ -353,7 +353,7 @@ function setTabHandler(tab, tabPos) {
         }
 
         panels[tabPos].className = 'active-panel';
-    }
+    };
 }
 
 class Table {
@@ -373,7 +373,7 @@ class Table {
 
         // Create an empty html table
         let table = document.createElement('table');
-        let caption = table.createCaption();
+        table.createCaption();
         let tableHead = table.createTHead();
         let tableFoot = table.createTFoot();
         let tableBody = table.createTBody();
@@ -783,11 +783,11 @@ function getInputs() {
 
     cfg.maxIterations = Number(
         document.getElementById(cfg.htmlId.maxIterations).value
-    )
+    );
 
     cfg.minError = Number(
         document.getElementById(cfg.htmlId.minError).value
-    )
+    );
 
     let i = 0;
     // Object that will contain arrays with data from each input table.
@@ -800,13 +800,10 @@ function getInputs() {
     let init = [];
     let moments = [];
 
-    let maxIterations = 0;
-    let minError = 0;
 
     // Read inputs from the tables
 
     // Read checkboxes
-    let ord_a = 'A'.charCodeAt(0);
     for (let i = 0; i < cfg.numberOfNodes; i++) {
         // Used to select the node that node 'i' is connected to. See
         // makeNodeTable for similar technique.
@@ -1024,9 +1021,6 @@ function startIterations(inputs) {
     let iterErr = [];
     // Contains sum of elements in each column of the init array
     let initTotal = [];
-    // Multidimension array that carries data from each iteration; contains
-    // multiple iterBal arrays.
-    let bal = [];
     // Used to compute the balance for the current iteration
     let curBal = [];
     // Used to compute the current moment carried over to connecting joint
@@ -1226,7 +1220,7 @@ function showResults(inputs, calcs) {
     // (cfg.numberOfNodes-1): There is a column of empty space between the
     // forces of each node in the table, except the last node which doesn't
     // need it.
-    let cols = 1 + forces + (cfg.numberOfNodes-1)
+    let cols = 1 + forces + (cfg.numberOfNodes-1);
 
     // 5: First 5 rows are labels for each column
     // calcs.iterations*2 - 1: each iteration creates a 'bal' and 'cof' row,
@@ -1281,7 +1275,7 @@ function showResults(inputs, calcs) {
                 spanForceLabel.classList.add(
                     `${cfg.cls.forceLabel}`,
                     `${cfg.cls.nodeLabel}-${curNode}-0`
-                )
+                );
                 spanForceLabel.textContent = `${cfg.nodeLabelsArray[curNode]}`;
                 output.table.rows[1].cells[col].appendChild(spanForceLabel);
 
@@ -1459,7 +1453,7 @@ function sumOfColumns(my2DArray) {
     }
     return sums;
 }
-
+/*
 function testCase() {
     // Automatically enters numbers in the appropriate cells
     let df = document.getElementsByName(cfg.tbl.df)[0];
@@ -1492,5 +1486,5 @@ function testCase() {
     df.tBodies[0].rows[1].cells[5].firstChild.value = 18.75;
     df.tBodies[0].rows[4].cells[2].firstChild.value = -18.75;
 }
-
+*/
 })();
