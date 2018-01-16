@@ -17,4 +17,4 @@ Short video with (very) quick overview of how to use it:
 [Moment Distribution Calculator (YouTube)](https://youtu.be/h7d7QQ3Tglo)
 
 If you're a Civil Engineering student and want to use this,
-the video uses an example structure to (hastily) show to use it.
+the video uses an example structure to (hastily) show how to use it.
