@@ -346,13 +346,17 @@ table tbody tr td input.input-diagonal {
 }
 
 #output-table td, #output-table th {
-    border: 0.1rem solid black;
+    border: 0.1rem solid hsl(270, 100%, 10%) !important;
     text-align: center;
     padding: 0.5rem 1rem;
 }
 
+#output-table caption {
+    border: none;
+}
+
 #output-table tr:nth-child(3) td {
-    border-bottom: 0.3rem solid teal;
+    border-bottom: 0.3rem solid teal !important;
 }
 
 #output-table tfoot td {
@@ -360,7 +364,6 @@ table tbody tr td input.input-diagonal {
     color: teal;
     text-shadow: 0 0 1rem black;
     border-top: none;
-    border-bottom: 0.1rem solid teal;
 }
 
 #output-table tbody tr:last-child td {
@@ -370,8 +373,13 @@ table tbody tr td input.input-diagonal {
 #output-table .node-spacer {
     background-color: hsl(270, 100%, 10%);
     padding: 0.5rem;
+    border-top-color: hsl(270, 100%, 10%);
+    border-bottom-color: hsl(270, 100%, 10%);
 }
 
+#output-table tfoot .node-spacer {
+    /border-bottom-color: teal;
+}
 
 #output-table span[class~="force-label-base"] {
     color:  turquoise;

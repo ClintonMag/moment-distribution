@@ -578,7 +578,7 @@ function makeNodeTable(numberOfNodes) {
     // Row labels and input boxes.
     // Row labels: single column of cells in the first column and not in the
     // header or footer.
-    const ord_a = 'a'.charCodeAt(0);
+    const ord_a = 'A'.charCodeAt(0);
     for (let i = 1; i <= numberOfNodes; i++) {
         nodes.getInnerCell(i, 0).textContent = i;
         let box = nodes.getInnerCell(i, 1);
@@ -756,7 +756,7 @@ function makeMomentsTable(name, numberOfNodes) {
     // Row labels and input boxes.
     // Row labels: single column of cells in the first column and not in the
     // header or footer.
-    const ord_a = 'a'.charCodeAt(0);
+    const ord_a = 'A'.charCodeAt(0);
     for (let i = 1; i <= numberOfNodes; i++) {
         moments.getInnerCell(i, 0).textContent = String.fromCharCode(
             ord_a + i-1
@@ -806,7 +806,7 @@ function getInputs() {
     // Read inputs from the tables
 
     // Read checkboxes
-    let ord_a = 'a'.charCodeAt(0);
+    let ord_a = 'A'.charCodeAt(0);
     for (let i = 0; i < cfg.numberOfNodes; i++) {
         // Used to select the node that node 'i' is connected to. See
         // makeNodeTable for similar technique.
