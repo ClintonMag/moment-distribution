@@ -5,9 +5,11 @@
 
 ### Installation
 
-- Download the repository as a zipped file using the 'clone or download' button on this page.
+For now, only the JavaScript implementation is complete, so:
+- [Click here: Moment Distribution Calculator - JavaScript.zip](https://github.com/ClintonMag/moment-distribution/blob/master/Moment%20Dist%20Calculator%20-%20JavaScript.zip)
+- Click on the "Download" button on the right.
 - Extract to any folder on your computer.
-- Go into the 'single_page_app' folder and open 'index.html' in a browser of your choice by double-clicking on it.
+- Open "index.html" in a browser of your choice by double-clicking on it.
 
 Note that this hasn't been extensively tested in many browsers and browser versions, but it should work in (almost) any browser (I hope).
 Maybe keep away from Internet Explorer versions < 9;
