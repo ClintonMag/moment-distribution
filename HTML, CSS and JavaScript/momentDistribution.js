@@ -287,7 +287,7 @@ var cfg = {
 
 
             // Fill in some test values
-            // testCase();
+            testCase();
         },
 
         runMethod: function(event) {
@@ -1453,7 +1453,7 @@ function sumOfColumns(my2DArray) {
     }
     return sums;
 }
-/*
+
 function testCase() {
     // Automatically enters numbers in the appropriate cells
     let df = document.getElementsByName(cfg.tbl.df)[0];
@@ -1486,5 +1486,5 @@ function testCase() {
     df.tBodies[0].rows[1].cells[5].firstChild.value = 18.75;
     df.tBodies[0].rows[4].cells[2].firstChild.value = -18.75;
 }
-*/
+
 })();
